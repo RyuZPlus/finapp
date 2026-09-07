@@ -10,6 +10,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.finconapp.ui.viewmodel.TransactionViewModel
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.Alignment
+import com.example.finconapp.ui.components.DateRangeSelector
 
 @Composable
 fun HomeScreen(
@@ -17,7 +20,9 @@ fun HomeScreen(
     viewModel: TransactionViewModel
 ) {
 
-    val transactions by viewModel.allTransactions.collectAsState()
+    //val transactions by viewModel.allTransactions.collectAsState()
+    val transactions by viewModel.filteredTransactions.collectAsState()
+    val selectedRange by viewModel.dateRangeType.collectAsState()
 
     LazyColumn(
         modifier = Modifier
@@ -36,10 +41,32 @@ fun HomeScreen(
         // Título
         item {
 
-            Text(
-                text = "Resumen",
-                style = MaterialTheme.typography.headlineMedium
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
+                Text(
+                    text = "Resumen",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+
+                DateRangeSelector(
+                    selectedRange = selectedRange,
+
+                    onRangeSelected = { type ->
+                        viewModel.setDateRange(type)
+                    },
+
+                    onCustomRangeSelected = { startDate, endDate ->
+                        viewModel.setCustomDateRange(
+                            startDate,
+                            endDate
+                        )
+                    }
+                )
+            }
         }
 
         // Balance

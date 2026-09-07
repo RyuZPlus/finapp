@@ -248,7 +248,8 @@ fun AppNavigation(
             ) {
 
                 CategoryScreen(
-                    paddingValues = paddingValues
+                    paddingValues = paddingValues,
+                    viewModel = transactionViewModel
                 )
             }
 

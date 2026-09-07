@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.finconapp.ui.viewmodel.TransactionViewModel
+import androidx.compose.ui.Alignment
+import com.example.finconapp.ui.components.DateRangeSelector
 
 @Composable
 fun TransactionScreen(
@@ -18,7 +20,9 @@ fun TransactionScreen(
     viewModel: TransactionViewModel
 ) {
 
-    val transactions by viewModel.allTransactions.collectAsState()
+    //val transactions by viewModel.allTransactions.collectAsState()
+    val transactions by viewModel.filteredTransactions.collectAsState()
+    val selectedRange by viewModel.dateRangeType.collectAsState()
 
     val totalTransactions = transactions.size
 
@@ -41,10 +45,32 @@ fun TransactionScreen(
             modifier = Modifier.height(16.dp)
         )
 
-        Text(
-            text = "Movimientos",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            Text(
+                text = "Movimientos",
+                style = MaterialTheme.typography.headlineMedium
+            )
+
+            DateRangeSelector(
+                selectedRange = selectedRange,
+
+                onRangeSelected = { type ->
+                    viewModel.setDateRange(type)
+                },
+
+                onCustomRangeSelected = { startDate, endDate ->
+                    viewModel.setCustomDateRange(
+                        startDate,
+                        endDate
+                    )
+                }
+            )
+        }
 
         Spacer(
             modifier = Modifier.height(20.dp)
