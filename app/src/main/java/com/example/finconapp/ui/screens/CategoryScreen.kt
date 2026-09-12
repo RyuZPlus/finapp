@@ -17,8 +17,11 @@ fun CategoryScreen(
     paddingValues: PaddingValues,
     viewModel: TransactionViewModel
 ) {
+    val customStartDate by
+    viewModel.customStartDate.collectAsState()
 
-    val selectedRange by viewModel.dateRangeType.collectAsState()
+    val customEndDate by
+    viewModel.customEndDate.collectAsState()
 
     Column(
         modifier = Modifier
@@ -39,7 +42,14 @@ fun CategoryScreen(
             )
 
             DateRangeSelector(
-                selectedRange = selectedRange,
+                selectedRange =
+                    viewModel.dateRangeType.collectAsState().value,
+
+                customStartDate =
+                    customStartDate,
+
+                customEndDate =
+                    customEndDate,
 
                 onRangeSelected = { type ->
                     viewModel.setDateRange(type)

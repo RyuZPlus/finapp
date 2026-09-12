@@ -22,7 +22,12 @@ fun HomeScreen(
 
     //val transactions by viewModel.allTransactions.collectAsState()
     val transactions by viewModel.filteredTransactions.collectAsState()
-    val selectedRange by viewModel.dateRangeType.collectAsState()
+
+    val customStartDate by
+    viewModel.customStartDate.collectAsState()
+
+    val customEndDate by
+    viewModel.customEndDate.collectAsState()
 
     LazyColumn(
         modifier = Modifier
@@ -53,7 +58,14 @@ fun HomeScreen(
                 )
 
                 DateRangeSelector(
-                    selectedRange = selectedRange,
+                    selectedRange =
+                        viewModel.dateRangeType.collectAsState().value,
+
+                    customStartDate =
+                        customStartDate,
+
+                    customEndDate =
+                        customEndDate,
 
                     onRangeSelected = { type ->
                         viewModel.setDateRange(type)

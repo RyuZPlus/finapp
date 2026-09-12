@@ -22,7 +22,12 @@ fun TransactionScreen(
 
     //val transactions by viewModel.allTransactions.collectAsState()
     val transactions by viewModel.filteredTransactions.collectAsState()
-    val selectedRange by viewModel.dateRangeType.collectAsState()
+
+    val customStartDate by
+    viewModel.customStartDate.collectAsState()
+
+    val customEndDate by
+    viewModel.customEndDate.collectAsState()
 
     val totalTransactions = transactions.size
 
@@ -57,7 +62,14 @@ fun TransactionScreen(
             )
 
             DateRangeSelector(
-                selectedRange = selectedRange,
+                selectedRange =
+                    viewModel.dateRangeType.collectAsState().value,
+
+                customStartDate =
+                    customStartDate,
+
+                customEndDate =
+                    customEndDate,
 
                 onRangeSelected = { type ->
                     viewModel.setDateRange(type)

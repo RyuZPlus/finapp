@@ -10,10 +10,55 @@ import androidx.compose.ui.unit.dp
 import com.example.finconapp.ui.model.DateRangeType
 import java.util.Calendar
 
+fun formatDateRange(
+    startDate: Long,
+    endDate: Long
+): String {
+
+    val formatterSameYear =
+        java.text.SimpleDateFormat(
+            "dd MMM",
+            java.util.Locale("es", "MX")
+        )
+
+    val formatterDifferentYear =
+        java.text.SimpleDateFormat(
+            "dd MMM yyyy",
+            java.util.Locale("es", "MX")
+        )
+
+    val startCalendar =
+        java.util.Calendar.getInstance()
+
+    val endCalendar =
+        java.util.Calendar.getInstance()
+
+    startCalendar.timeInMillis = startDate
+    endCalendar.timeInMillis = endDate
+
+    return if (
+        startCalendar.get(java.util.Calendar.YEAR) ==
+        endCalendar.get(java.util.Calendar.YEAR)
+    ) {
+
+        "${formatterSameYear.format(startDate)} – ${
+            formatterSameYear.format(endDate)
+        }"
+
+    } else {
+
+        "${formatterDifferentYear.format(startDate)} – ${
+            formatterDifferentYear.format(endDate)
+        }"
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DateRangeSelector(
     selectedRange: DateRangeType,
+    customStartDate: Long?,
+    customEndDate: Long?,
     onRangeSelected: (DateRangeType) -> Unit,
     onCustomRangeSelected: (Long, Long) -> Unit,
     modifier: Modifier = Modifier
@@ -58,8 +103,23 @@ fun DateRangeSelector(
                     DateRangeType.MONTH ->
                         "1 mes"
 
-                    DateRangeType.CUSTOM ->
-                        "Personalizado"
+                    DateRangeType.CUSTOM -> {
+
+                        if (
+                            customStartDate != null &&
+                            customEndDate != null
+                        ) {
+
+                            formatDateRange(
+                                customStartDate,
+                                customEndDate
+                            )
+
+                        } else {
+
+                            "Personalizado"
+                        }
+                    }
                 }
             )
         }

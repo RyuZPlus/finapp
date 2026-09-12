@@ -27,6 +27,12 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
     val dateRangeType: StateFlow<DateRangeType> =
         _dateRangeType
 
+    private val _customStartDate = MutableStateFlow<Long?>(null)
+    val customStartDate: StateFlow<Long?> = _customStartDate
+
+    private val _customEndDate = MutableStateFlow<Long?>(null)
+    val customEndDate: StateFlow<Long?> = _customEndDate
+
     // Fechas correspondientes al periodo seleccionado
     private val _dateRange =
         MutableStateFlow(
@@ -83,6 +89,9 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
         startDate: Long,
         endDate: Long
     ) {
+
+        _customStartDate.value = startDate
+        _customEndDate.value = endDate
 
         _dateRangeType.value =
             DateRangeType.CUSTOM
