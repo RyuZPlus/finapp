@@ -72,6 +72,14 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
         repository.insert(transaction)
     }
 
+    fun update(transaction: Transaction) = viewModelScope.launch {
+        repository.update(transaction)
+    }
+
+    fun delete(transaction: Transaction) = viewModelScope.launch {
+        repository.delete(transaction)
+    }
+
     // Cambiar periodo
     fun setDateRange(type: DateRangeType) {
 

@@ -238,7 +238,16 @@ fun AppNavigation(
 
                 TransactionScreen(
                     paddingValues = paddingValues,
-                    viewModel = transactionViewModel
+                    viewModel = transactionViewModel,
+                    categoriesList = categories,
+                    onCreateCategory = { categoryName ->
+
+                        categoryViewModel.insert(
+                            Category(
+                                name = categoryName.trim()
+                            )
+                        )
+                    }
                 )
             }
 

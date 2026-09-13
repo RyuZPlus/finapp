@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.finconapp.data.local.entity.Category
 import com.example.finconapp.data.local.entity.Transaction
 import com.example.finconapp.ui.components.DateRangeSelector
 import com.example.finconapp.ui.components.TransactionDayHeader
@@ -22,7 +23,9 @@ import com.example.finconapp.ui.viewmodel.TransactionViewModel
 @Composable
 fun TransactionScreen(
     paddingValues: PaddingValues,
-    viewModel: TransactionViewModel
+    viewModel: TransactionViewModel,
+    categoriesList: List<Category>,
+    onCreateCategory: (String) -> Unit
 ) {
 
     val transactions by viewModel.filteredTransactions.collectAsState()
@@ -46,6 +49,10 @@ fun TransactionScreen(
     }
 
     var selectedTransaction by remember {
+        mutableStateOf<Transaction?>(null)
+    }
+
+    var transactionToEdit by remember {
         mutableStateOf<Transaction?>(null)
     }
 
@@ -109,7 +116,7 @@ fun TransactionScreen(
             .filter { it.type == "Gasto" }
             .sumOf { it.amount }
 
-    val categories =
+    val filterCategories =
         transactions
             .map { it.category }
             .distinct()
@@ -216,7 +223,7 @@ fun TransactionScreen(
                 selectedType = it
             },
 
-            categories = categories,
+            categories = filterCategories,
             selectedCategory = selectedCategory,
             onCategorySelected = {
                 selectedCategory = it
@@ -355,7 +362,38 @@ fun TransactionScreen(
             transaction = transaction,
             onDismiss = {
                 selectedTransaction = null
+            },
+            onEdit = {
+                transactionToEdit = transaction
+                selectedTransaction = null
+            },
+            onDelete = {
+                viewModel.delete(transaction)
+                selectedTransaction = null
             }
+        )
+    }
+
+    transactionToEdit?.let { transaction ->
+
+        AddTransactionSheet(
+            categories = categoriesList,
+            transaction = transaction,
+
+            onDismiss = {
+                transactionToEdit = null
+            },
+
+            onSave = { updatedTransaction ->
+
+                viewModel.update(
+                    updatedTransaction
+                )
+
+                transactionToEdit = null
+            },
+
+            onCreateCategory = onCreateCategory
         )
     }
 }

@@ -24,6 +24,9 @@ interface TransactionDao {
         endDate: Long
     ): Flow<List<Transaction>>
 
+    @Update
+    suspend fun update(transaction: Transaction)
+
     @Delete
     suspend fun delete(transaction: Transaction)
 }

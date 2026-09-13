@@ -20,6 +20,7 @@ import java.util.Locale
 @Composable
 fun AddTransactionSheet(
     categories: List<Category>,
+    transaction: Transaction? = null,
     onDismiss: () -> Unit,
     onSave: (Transaction) -> Unit,
     onCreateCategory: (String) -> Unit
@@ -37,39 +38,41 @@ fun AddTransactionSheet(
     // CAMPOS
     // --------------------------------
 
-    var title by remember {
-        mutableStateOf("")
+    var title by remember(transaction) {
+        mutableStateOf(transaction?.title ?: "")
     }
 
-    var amount by remember {
-        mutableStateOf("")
+    var amount by remember(transaction) {
+        mutableStateOf(
+            transaction?.amount?.toString() ?: ""
+        )
     }
 
-    var description by remember {
-        mutableStateOf("")
+    var description by remember(transaction) {
+        mutableStateOf(transaction?.description ?: "")
     }
 
-    var type by remember {
-        mutableStateOf("Gasto")
+    var type by remember(transaction) {
+        mutableStateOf(transaction?.type ?: "Gasto")
     }
 
-    var category by remember {
-        mutableStateOf("")
+    var category by remember(transaction) {
+        mutableStateOf(transaction?.category ?: "")
     }
 
-    var subcategory by remember {
-        mutableStateOf("")
+    var subcategory by remember(transaction) {
+        mutableStateOf(transaction?.subcategory ?: "")
     }
 
     // --------------------------------
     // CATEGORÍA NUEVA
     // --------------------------------
 
-    var createNewCategory by remember {
+    var createNewCategory by remember(transaction) {
         mutableStateOf(false)
     }
 
-    var newCategory by remember {
+    var newCategory by remember(transaction) {
         mutableStateOf("")
     }
 
@@ -77,8 +80,11 @@ fun AddTransactionSheet(
     // FECHA
     // --------------------------------
 
-    var selectedDate by remember {
-        mutableStateOf(System.currentTimeMillis())
+    var selectedDate by remember(transaction) {
+        mutableStateOf(
+            transaction?.date
+                ?: System.currentTimeMillis()
+        )
     }
 
     // --------------------------------
@@ -130,7 +136,11 @@ fun AddTransactionSheet(
             // --------------------------------
 
             Text(
-                text = "Nuevo movimiento",
+                text = if (transaction == null)
+                    "Nuevo movimiento"
+                else
+                    "Editar movimiento",
+
                 style = MaterialTheme.typography.headlineSmall
             )
 
@@ -478,34 +488,46 @@ fun AddTransactionSheet(
                         onCreateCategory(finalCategory)
                     }
 
-                    val transaction = Transaction(
+                    val updatedTransaction =
+                        Transaction(
 
-                        title = title.trim(),
+                            id =
+                                transaction?.id
+                                    ?: 0,
 
-                        amount = amount
-                            .toDoubleOrNull()
-                            ?: 0.0,
+                            title =
+                                title.trim(),
 
-                        description = description
-                            .trim()
-                            .ifBlank {
-                                null
-                            },
+                            amount =
+                                amount
+                                    .toDoubleOrNull()
+                                    ?: 0.0,
 
-                        type = type,
+                            description =
+                                description
+                                    .trim()
+                                    .ifBlank {
+                                        null
+                                    },
 
-                        category = finalCategory,
+                            type = type,
 
-                        subcategory = subcategory
-                            .trim()
-                            .ifBlank {
-                                null
-                            },
+                            category =
+                                finalCategory,
 
-                        date = selectedDate
+                            subcategory =
+                                subcategory
+                                    .trim()
+                                    .ifBlank {
+                                        null
+                                    },
+
+                            date = selectedDate
+                        )
+
+                    onSave(
+                        updatedTransaction
                     )
-
-                    onSave(transaction)
                 },
 
                 modifier = Modifier.fillMaxWidth(),
@@ -520,7 +542,12 @@ fun AddTransactionSheet(
                                     )
             ) {
 
-                Text("Guardar")
+                Text(
+                    if (transaction == null)
+                        "Guardar"
+                    else
+                        "Guardar cambios"
+                )
             }
 
             // --------------------------------

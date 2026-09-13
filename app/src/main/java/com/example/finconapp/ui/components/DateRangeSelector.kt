@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.finconapp.ui.model.DateRangeType
@@ -242,9 +243,14 @@ fun DateRangeSelector(
             DateRangePicker(
                 state = dateRangePickerState,
                 title = {
-                    Text(
-                        text = "Seleccionar periodo"
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Periodo de movimientos"
+                        )
+                    }
                 },
                 headline = {
                     Text(
