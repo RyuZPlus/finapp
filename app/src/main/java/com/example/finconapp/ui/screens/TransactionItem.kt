@@ -2,7 +2,11 @@ package com.example.finconapp.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,7 +18,8 @@ import com.example.finconapp.data.local.entity.Transaction
 @Composable
 fun TransactionItem(
     transaction: Transaction,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
 
     Card(
@@ -63,6 +68,16 @@ fun TransactionItem(
                 Text(
                     text = transaction.type,
                     style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            IconButton(
+                onClick = onDelete
+            ) {
+
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Eliminar movimiento"
                 )
             }
         }

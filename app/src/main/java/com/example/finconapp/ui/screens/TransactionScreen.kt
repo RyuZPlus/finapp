@@ -56,6 +56,10 @@ fun TransactionScreen(
         mutableStateOf<Transaction?>(null)
     }
 
+    var transactionToDelete by remember {
+        mutableStateOf<Transaction?>(null)
+    }
+
     /*
      * Aplicamos los filtros de la pantalla
      * sobre las transacciones que ya vienen
@@ -343,8 +347,10 @@ fun TransactionScreen(
                         TransactionItem(
                             transaction = transaction,
                             onClick = {
-                                selectedTransaction =
-                                    transaction
+                                selectedTransaction = transaction
+                            },
+                            onDelete = {
+                                transactionToDelete = transaction
                             }
                         )
                     }
@@ -394,6 +400,53 @@ fun TransactionScreen(
             },
 
             onCreateCategory = onCreateCategory
+        )
+    }
+
+    transactionToDelete?.let { transaction ->
+
+        AlertDialog(
+
+            onDismissRequest = {
+                transactionToDelete = null
+            },
+
+            title = {
+                Text("Eliminar movimiento")
+            },
+
+            text = {
+                Text(
+                    "¿Estás seguro de que deseas eliminar " +
+                            "\"${transaction.title}\"? " +
+                            "Esta acción no se puede deshacer."
+                )
+            },
+
+            confirmButton = {
+
+                TextButton(
+                    onClick = {
+
+                        viewModel.delete(transaction)
+
+                        transactionToDelete = null
+                    }
+                ) {
+                    Text("Eliminar")
+                }
+            },
+
+            dismissButton = {
+
+                TextButton(
+                    onClick = {
+                        transactionToDelete = null
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
         )
     }
 }

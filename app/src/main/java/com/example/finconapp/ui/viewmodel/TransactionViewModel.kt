@@ -20,9 +20,9 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
 
     private val repository: TransactionRepository
 
-    // Periodo seleccionado actualmente
+    // Periodo seleccionado actualmente por defecto
     private val _dateRangeType =
-        MutableStateFlow(DateRangeType.MONTH)
+        MutableStateFlow(DateRangeType.DAY)
 
     val dateRangeType: StateFlow<DateRangeType> =
         _dateRangeType
@@ -36,11 +36,8 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
     // Fechas correspondientes al periodo seleccionado
     private val _dateRange =
         MutableStateFlow(
-            calculateDateRange(DateRangeType.MONTH)
+            calculateDateRange(DateRangeType.DAY)
         )
-
-    val dateRange: StateFlow<DateRange> =
-        _dateRange
 
     // Transacciones filtradas por el periodo seleccionado
     val filteredTransactions: StateFlow<List<Transaction>>
