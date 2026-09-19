@@ -1,9 +1,11 @@
 package com.example.finconapp.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -12,9 +14,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+
 import com.example.finconapp.data.local.entity.Transaction
 import com.example.finconapp.ui.components.DateRangeSelector
 import com.example.finconapp.ui.viewmodel.TransactionViewModel
+
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.data.ExtraStore
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -184,6 +201,12 @@ private data class CategorySummary(
     val balance: Double
 )
 
+private data class MonthlyCategoryData(
+    val month: String,
+    val income: Double,
+    val expenses: Double
+)
+
 @Composable
 private fun CategoryCard(
     category: CategorySummary,
@@ -334,6 +357,9 @@ private fun CategoryDetail(
 
         item {
 
+            val monthlyData =
+                getMonthlyCategoryData(categoryTransactions)
+
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -351,10 +377,73 @@ private fun CategoryDetail(
                         modifier = Modifier.height(16.dp)
                     )
 
-                    Text(
-                        text = "Aquí irá el gráfico de evolución mensual.",
-                        style = MaterialTheme.typography.bodyMedium
+                    CategoryMonthlyChart(
+                        data = monthlyData
                     )
+
+                    Spacer(
+                        modifier = Modifier.height(12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+
+                        Row(
+                            verticalAlignment =
+                                Alignment.CenterVertically
+                        ) {
+
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(
+                                        Color(0xFF2E7D32),
+                                        CircleShape
+                                    )
+                            )
+
+                            Spacer(
+                                modifier = Modifier.width(6.dp)
+                            )
+
+                            Text(
+                                text = "Ingresos",
+                                style =
+                                    MaterialTheme.typography.labelMedium
+                            )
+                        }
+
+                        Spacer(
+                            modifier = Modifier.width(20.dp)
+                        )
+
+                        Row(
+                            verticalAlignment =
+                                Alignment.CenterVertically
+                        ) {
+
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .background(
+                                        Color(0xFFC62828),
+                                        CircleShape
+                                    )
+                            )
+
+                            Spacer(
+                                modifier = Modifier.width(6.dp)
+                            )
+
+                            Text(
+                                text = "Gastos",
+                                style =
+                                    MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -458,4 +547,149 @@ private fun formatCurrency(
     return NumberFormat
         .getCurrencyInstance(Locale("es", "MX"))
         .format(amount)
+}
+
+private fun getMonthlyCategoryData(
+    transactions: List<Transaction>
+): List<MonthlyCategoryData> {
+
+    val monthFormat = java.text.SimpleDateFormat(
+        "MMM",
+        Locale("es", "MX")
+    )
+
+    val monthKeyFormat = java.text.SimpleDateFormat(
+        "yyyy-MM",
+        Locale("es", "MX")
+    )
+
+    return transactions
+        .groupBy { transaction ->
+            monthKeyFormat.format(
+                java.util.Date(transaction.date)
+            )
+        }
+        .toSortedMap()
+        .map { (_, monthTransactions) ->
+
+            val date = java.util.Date(
+                monthTransactions.first().date
+            )
+
+            val income = monthTransactions
+                .filter { it.type == "Ingreso" }
+                .sumOf { it.amount }
+
+            val expenses = monthTransactions
+                .filter { it.type == "Gasto" }
+                .sumOf { it.amount }
+
+            MonthlyCategoryData(
+                month = monthFormat
+                    .format(date)
+                    .replaceFirstChar {
+                        it.uppercase()
+                    },
+                income = income,
+                expenses = expenses
+            )
+        }
+}
+
+private val MonthLabelsKey =
+    ExtraStore.Key<List<String>>()
+
+@Composable
+private fun CategoryMonthlyChart(
+    data: List<MonthlyCategoryData>
+) {
+    if (data.isEmpty()) {
+        Text(
+            text = "No hay datos suficientes para mostrar la evolución.",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
+        return
+    }
+
+    val modelProducer =
+        remember {
+            CartesianChartModelProducer()
+        }
+
+    LaunchedEffect(data) {
+
+        modelProducer.runTransaction {
+
+            lineSeries {
+
+                series(
+                    data.map { it.income }
+                )
+
+                series(
+                    data.map { it.expenses }
+                )
+            }
+
+            extras {
+                it[MonthLabelsKey] =
+                    data.map { monthData ->
+                        monthData.month
+                    }
+            }
+        }
+    }
+
+    val incomeLine =
+        LineCartesianLayer.rememberLine(
+            fill = LineCartesianLayer.LineFill.single(
+                Fill(Color(0xFF2E7D32))
+            )
+        )
+
+    val expenseLine =
+        LineCartesianLayer.rememberLine(
+            fill = LineCartesianLayer.LineFill.single(
+                Fill(Color(0xFFC62828))
+            )
+        )
+
+    val lineLayer =
+        rememberLineCartesianLayer(
+            lineProvider =
+                LineCartesianLayer.LineProvider.series(
+                    incomeLine,
+                    expenseLine
+                )
+        )
+
+    val monthFormatter =
+        CartesianValueFormatter { context, value, _ ->
+
+            context.model
+                .extraStore[MonthLabelsKey]
+                .getOrNull(value.toInt())
+                ?: ""
+        }
+
+    CartesianChartHost(
+        chart = rememberCartesianChart(
+            lineLayer,
+
+            startAxis =
+                VerticalAxis.rememberStart(),
+
+            bottomAxis =
+                HorizontalAxis.rememberBottom(
+                    valueFormatter = monthFormatter
+                )
+        ),
+
+        modelProducer = modelProducer,
+
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(220.dp)
+    )
 }
