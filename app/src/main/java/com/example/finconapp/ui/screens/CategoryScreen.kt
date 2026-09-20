@@ -14,10 +14,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.BackHandler
 
 import com.example.finconapp.data.local.entity.Transaction
 import com.example.finconapp.ui.components.DateRangeSelector
 import com.example.finconapp.ui.viewmodel.TransactionViewModel
+import com.example.finconapp.ui.components.TransactionDayHeader
+import com.example.finconapp.ui.components.formatTransactionDay
 
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
@@ -34,6 +37,7 @@ import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 
 import java.text.NumberFormat
 import java.util.Locale
+import java.util.Calendar
 
 @Composable
 fun CategoryScreen(
@@ -50,6 +54,12 @@ fun CategoryScreen(
 
     var selectedCategory by remember {
         mutableStateOf<String?>(null)
+    }
+
+    BackHandler(
+        enabled = selectedCategory != null
+    ) {
+        selectedCategory = null
     }
 
     Column(
@@ -287,6 +297,13 @@ private fun CategoryDetail(
     val categoryTransactions = transactions
         .filter { it.category == category }
 
+    val groupedTransactions =
+        categoryTransactions
+            .sortedByDescending { it.date }
+            .groupBy { transaction ->
+                formatTransactionDay(transaction.date)
+            }
+
     val income = categoryTransactions
         .filter { it.type == "Ingreso" }
         .sumOf { it.amount }
@@ -456,11 +473,27 @@ private fun CategoryDetail(
             )
         }
 
-        items(categoryTransactions) { transaction ->
+        groupedTransactions.forEach { (day, dayTransactions) ->
 
-            CategoryTransactionItem(
-                transaction = transaction
-            )
+            item {
+
+                TransactionDayHeader(
+                    date = day,
+                    transactions = dayTransactions
+                )
+            }
+
+            items(
+                items = dayTransactions,
+                key = { transaction ->
+                    transaction.id
+                }
+            ) { transaction ->
+
+                CategoryTransactionItem(
+                    transaction = transaction
+                )
+            }
         }
     }
 }
@@ -553,6 +586,10 @@ private fun getMonthlyCategoryData(
     transactions: List<Transaction>
 ): List<MonthlyCategoryData> {
 
+    if (transactions.isEmpty()) {
+        return emptyList()
+    }
+
     val monthFormat = java.text.SimpleDateFormat(
         "MMM",
         Locale("es", "MX")
@@ -563,39 +600,143 @@ private fun getMonthlyCategoryData(
         Locale("es", "MX")
     )
 
-    return transactions
-        .groupBy { transaction ->
+    /*
+     * Agrupamos las transacciones existentes por mes.
+     */
+    val transactionsByMonth =
+        transactions.groupBy { transaction ->
             monthKeyFormat.format(
                 java.util.Date(transaction.date)
             )
         }
-        .toSortedMap()
-        .map { (_, monthTransactions) ->
 
-            val date = java.util.Date(
-                monthTransactions.first().date
+    /*
+     * Obtenemos el primer y último mes
+     * que tienen movimientos.
+     */
+    val firstDate = transactions.minOf { it.date }
+    val lastDate = transactions.maxOf { it.date }
+
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = firstDate
+
+        set(
+            Calendar.DAY_OF_MONTH,
+            1
+        )
+
+        set(
+            Calendar.HOUR_OF_DAY,
+            0
+        )
+
+        set(
+            Calendar.MINUTE,
+            0
+        )
+
+        set(
+            Calendar.SECOND,
+            0
+        )
+
+        set(
+            Calendar.MILLISECOND,
+            0
+        )
+    }
+
+    val lastCalendar = Calendar.getInstance().apply {
+        timeInMillis = lastDate
+
+        set(
+            Calendar.DAY_OF_MONTH,
+            1
+        )
+
+        set(
+            Calendar.HOUR_OF_DAY,
+            0
+        )
+
+        set(
+            Calendar.MINUTE,
+            0
+        )
+
+        set(
+            Calendar.SECOND,
+            0
+        )
+
+        set(
+            Calendar.MILLISECOND,
+            0
+        )
+    }
+
+    val result = mutableListOf<MonthlyCategoryData>()
+
+    /*
+     * Recorremos todos los meses desde el primero
+     * hasta el último.
+     */
+    while (
+        calendar.get(Calendar.YEAR) <
+        lastCalendar.get(Calendar.YEAR) ||
+
+        (
+                calendar.get(Calendar.YEAR) ==
+                        lastCalendar.get(Calendar.YEAR) &&
+
+                        calendar.get(Calendar.MONTH) <=
+                        lastCalendar.get(Calendar.MONTH)
+                )
+    ) {
+
+        val monthKey =
+            monthKeyFormat.format(
+                calendar.time
             )
 
-            val income = monthTransactions
+        val monthTransactions =
+            transactionsByMonth[monthKey]
+                ?: emptyList()
+
+        val income =
+            monthTransactions
                 .filter { it.type == "Ingreso" }
                 .sumOf { it.amount }
 
-            val expenses = monthTransactions
+        val expenses =
+            monthTransactions
                 .filter { it.type == "Gasto" }
                 .sumOf { it.amount }
 
+        result.add(
             MonthlyCategoryData(
                 month = monthFormat
-                    .format(date)
+                    .format(calendar.time)
                     .replaceFirstChar {
                         it.uppercase()
                     },
+
                 income = income,
                 expenses = expenses
             )
-        }
-}
+        )
 
+        /*
+         * Pasamos al siguiente mes.
+         */
+        calendar.add(
+            Calendar.MONTH,
+            1
+        )
+    }
+
+    return result
+}
 private val MonthLabelsKey =
     ExtraStore.Key<List<String>>()
 
@@ -608,6 +749,31 @@ private fun CategoryMonthlyChart(
             text = "No hay datos suficientes para mostrar la evolución.",
             style = MaterialTheme.typography.bodyMedium
         )
+
+        return
+    }
+
+    if (data.size < 2) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Aún no hay suficientes datos",
+                style = MaterialTheme.typography.titleSmall
+            )
+
+            Spacer(
+                modifier = Modifier.height(4.dp)
+            )
+
+            Text(
+                text = "Selecciona un periodo que incluyan movimientos de más de un mes para ver la evolución.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
 
         return
     }
