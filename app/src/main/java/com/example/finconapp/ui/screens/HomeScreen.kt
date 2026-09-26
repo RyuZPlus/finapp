@@ -9,18 +9,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.finconapp.ui.viewmodel.TransactionViewModel
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.Alignment
+import com.example.finconapp.data.local.entity.Category
 import com.example.finconapp.ui.components.DateRangeSelector
+import com.example.finconapp.ui.viewmodel.TransactionViewModel
 
 @Composable
 fun HomeScreen(
     paddingValues: PaddingValues,
-    viewModel: TransactionViewModel
+    viewModel: TransactionViewModel,
+    categoriesList: List<Category>
 ) {
 
-    //val transactions by viewModel.allTransactions.collectAsState()
     val transactions by viewModel.filteredTransactions.collectAsState()
 
     val customStartDate by
@@ -93,7 +93,8 @@ fun HomeScreen(
         item {
 
             CategoryExpenseCard(
-                transactions = transactions
+                transactions = transactions,
+                categories = categoriesList
             )
         }
 
@@ -101,7 +102,8 @@ fun HomeScreen(
         item {
 
             RecentTransactionsCard(
-                transactions = transactions
+                transactions = transactions,
+                categories = categoriesList
             )
         }
     }

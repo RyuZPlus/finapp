@@ -15,12 +15,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.BackHandler
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import com.example.finconapp.data.local.entity.Category
 
 import com.example.finconapp.data.local.entity.Transaction
 import com.example.finconapp.ui.components.DateRangeSelector
 import com.example.finconapp.ui.viewmodel.TransactionViewModel
 import com.example.finconapp.ui.components.TransactionDayHeader
 import com.example.finconapp.ui.components.formatTransactionDay
+import com.example.finconapp.ui.viewmodel.CategoryViewModel
 
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
@@ -42,7 +46,9 @@ import java.util.Calendar
 @Composable
 fun CategoryScreen(
     paddingValues: PaddingValues,
-    viewModel: TransactionViewModel
+    viewModel: TransactionViewModel,
+    categoryViewModel: CategoryViewModel,
+    categoriesList: List<Category>
 ) {
     val transactions by viewModel.filteredTransactions.collectAsState()
 
@@ -52,14 +58,35 @@ fun CategoryScreen(
     val customEndDate by
     viewModel.customEndDate.collectAsState()
 
-    var selectedCategory by remember {
-        mutableStateOf<String?>(null)
+    var selectedCategoryId by remember {
+        mutableStateOf<Int?>(null)
     }
 
+    var showEditCategoryDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var selectedCategoryHasTransactions by remember {
+        mutableStateOf(false)
+    }
+
+    var showDeleteCategoryDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var deleteCategoryError by remember {
+        mutableStateOf(false)
+    }
+
+    val selectedCategory =
+        categoriesList.firstOrNull {
+            it.id == selectedCategoryId
+        }
+
     BackHandler(
-        enabled = selectedCategory != null
+        enabled = selectedCategoryId != null
     ) {
-        selectedCategory = null
+        selectedCategoryId = null
     }
 
     Column(
@@ -86,7 +113,7 @@ fun CategoryScreen(
 
                 IconButton(
                     onClick = {
-                        selectedCategory = null
+                        selectedCategoryId = null
                     }
                 ) {
                     Icon(
@@ -97,10 +124,34 @@ fun CategoryScreen(
                 }
 
                 Text(
-                    text = selectedCategory ?: "",
+                    text = selectedCategory?.name ?: "",
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.weight(1f)
                 )
+
+                IconButton(
+                    onClick = {
+                        showEditCategoryDialog = true
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Editar categoría"
+                    )
+                }
+
+                IconButton(
+                    enabled = !selectedCategoryHasTransactions,
+                    onClick = {
+                        deleteCategoryError = false
+                        showDeleteCategoryDialog = true
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Eliminar categoría"
+                    )
+                }
             }
 
             DateRangeSelector(
@@ -132,8 +183,13 @@ fun CategoryScreen(
 
             CategoryList(
                 transactions = transactions,
+                categories = categoriesList,
                 onCategorySelected = {
-                    selectedCategory = it
+                    selectedCategoryId = it.id
+
+                    viewModel.categoryHasTransactions(it.id) { hasTransactions ->
+                        selectedCategoryHasTransactions = hasTransactions
+                    }
                 }
             )
 
@@ -144,28 +200,116 @@ fun CategoryScreen(
                 transactions = transactions
             )
         }
+        if (
+            showEditCategoryDialog &&
+            selectedCategory != null
+        ) {
+            EditCategoryDialog(
+                category = selectedCategory,
+                onDismiss = {
+                    showEditCategoryDialog = false
+                },
+                onSave = { updatedCategory, onDuplicate ->
+
+                    categoryViewModel.update(
+                        updatedCategory
+                    ) { success ->
+
+                        if (success) {
+                            showEditCategoryDialog = false
+                        } else {
+                            onDuplicate()
+                        }
+                    }
+                }
+            )
+        }
+        if (
+            showDeleteCategoryDialog &&
+            selectedCategory != null
+        ) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDeleteCategoryDialog = false
+                },
+
+                title = {
+                    Text("Eliminar categoría")
+                },
+
+                text = {
+                    Text(
+                        "¿Deseas eliminar la categoría " +
+                                "\"${selectedCategory.name}\"?"
+                    )
+                },
+
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+
+                            categoryViewModel.delete(
+                                selectedCategory.id
+                            ) { success ->
+
+                                if (success) {
+
+                                    showDeleteCategoryDialog = false
+                                    selectedCategoryId = null
+
+                                } else {
+
+                                    showDeleteCategoryDialog = false
+                                    deleteCategoryError = true
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Eliminar")
+                    }
+                },
+
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteCategoryDialog = false
+                        }
+                    ) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
     }
 }
 
 @Composable
 private fun CategoryList(
     transactions: List<Transaction>,
-    onCategorySelected: (String) -> Unit
+    categories: List<Category>,
+    onCategorySelected: (Category) -> Unit
 ) {
-    val categories = transactions
-        .groupBy { it.category }
-        .map { (category, categoryTransactions) ->
+    val categorySummaries = categories
+        .map { category ->
 
-            val income = categoryTransactions
-                .filter { it.type == "Ingreso" }
-                .sumOf { it.amount }
+            val categoryTransactions =
+                transactions.filter {
+                    it.categoryId == category.id
+                }
 
-            val expenses = categoryTransactions
-                .filter { it.type == "Gasto" }
-                .sumOf { it.amount }
+            val income =
+                categoryTransactions
+                    .filter { it.type == "Ingreso" }
+                    .sumOf { it.amount }
+
+            val expenses =
+                categoryTransactions
+                    .filter { it.type == "Gasto" }
+                    .sumOf { it.amount }
 
             CategorySummary(
-                name = category,
+                id = category.id,
+                name = category.name,
                 income = income,
                 expenses = expenses,
                 balance = income - expenses
@@ -173,14 +317,14 @@ private fun CategoryList(
         }
         .sortedBy { it.name }
 
-    if (categories.isEmpty()) {
+    if (categorySummaries.isEmpty()) {
 
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No hay movimientos registrados."
+                text = "No hay categorías registradas."
             )
         }
 
@@ -192,12 +336,20 @@ private fun CategoryList(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
 
-        items(categories) { category ->
+        items(categorySummaries) { category ->
 
             CategoryCard(
                 category = category,
                 onClick = {
-                    onCategorySelected(category.name)
+
+                    val selected =
+                        categories.firstOrNull {
+                            it.id == category.id
+                        }
+
+                    if (selected != null) {
+                        onCategorySelected(selected)
+                    }
                 }
             )
         }
@@ -205,6 +357,7 @@ private fun CategoryList(
 }
 
 private data class CategorySummary(
+    val id: Int,
     val name: String,
     val income: Double,
     val expenses: Double,
@@ -291,11 +444,11 @@ private fun CategoryAmount(
 
 @Composable
 private fun CategoryDetail(
-    category: String,
+    category: Category,
     transactions: List<Transaction>
 ) {
     val categoryTransactions = transactions
-        .filter { it.category == category }
+        .filter { it.categoryId == category.id }
 
     val groupedTransactions =
         categoryTransactions
@@ -857,5 +1010,96 @@ private fun CategoryMonthlyChart(
         modifier = Modifier
             .fillMaxWidth()
             .height(220.dp)
+    )
+}
+
+@Composable
+private fun EditCategoryDialog(
+    category: Category,
+    onDismiss: () -> Unit,
+    onSave: (Category, () -> Unit) -> Unit
+) {
+    var name by remember(category.id) {
+        mutableStateOf(category.name)
+    }
+
+    var duplicateError by remember(category.id) {
+        mutableStateOf(false)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+
+        title = {
+            Text(
+                text = "Editar categoría"
+            )
+        },
+
+        text = {
+
+            Column {
+
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                        duplicateError = false
+                    },
+                    label = {
+                        Text("Nombre")
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = duplicateError
+                )
+
+                if (duplicateError) {
+
+                    Spacer(
+                        modifier = Modifier.height(6.dp)
+                    )
+
+                    Text(
+                        text = "Ya existe una categoría con ese nombre.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
+        },
+
+        confirmButton = {
+
+            TextButton(
+                onClick = {
+
+                    val newName = name.trim()
+
+                    if (newName.isNotEmpty()) {
+
+                        onSave(
+                            category.copy(
+                                name = newName
+                            )
+                        ) {
+                            duplicateError = true
+                        }
+                    }
+                },
+                enabled = name.trim().isNotEmpty()
+            ) {
+                Text("Guardar")
+            }
+        },
+
+        dismissButton = {
+
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancelar")
+            }
+        }
     )
 }

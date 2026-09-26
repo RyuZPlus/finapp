@@ -108,6 +108,21 @@ class TransactionViewModel(application: Application) : AndroidViewModel(applicat
             )
     }
 
+    fun categoryHasTransactions(
+        categoryId: Int,
+        onResult: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+
+            val hasTransactions =
+                repository.categoryHasTransactions(
+                    categoryId
+                )
+
+            onResult(hasTransactions)
+        }
+    }
+
     // Calcular rango de fechas
     private fun calculateDateRange(
         type: DateRangeType

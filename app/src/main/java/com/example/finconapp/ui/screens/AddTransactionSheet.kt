@@ -23,7 +23,10 @@ fun AddTransactionSheet(
     transaction: Transaction? = null,
     onDismiss: () -> Unit,
     onSave: (Transaction) -> Unit,
-    onCreateCategory: (String) -> Unit
+    onCreateCategory: (
+        String,
+        (Int?) -> Unit
+    ) -> Unit
 ) {
 
     val context = LocalContext.current
@@ -56,8 +59,12 @@ fun AddTransactionSheet(
         mutableStateOf(transaction?.type ?: "Gasto")
     }
 
-    var category by remember(transaction) {
-        mutableStateOf(transaction?.category ?: "")
+    var selectedCategory by remember(transaction, categories) {
+        mutableStateOf(
+            categories.firstOrNull {
+                it.id == transaction?.categoryId
+            }
+        )
     }
 
     var subcategory by remember(transaction) {
@@ -318,7 +325,7 @@ fun AddTransactionSheet(
                         createNewCategory = it
 
                         if (it) {
-                            category = ""
+                            selectedCategory = null
                         } else {
                             newCategory = ""
                         }
@@ -365,7 +372,7 @@ fun AddTransactionSheet(
                 ) {
 
                     OutlinedTextField(
-                        value = category,
+                        value = selectedCategory?.name ?: "",
                         onValueChange = {},
                         readOnly = true,
                         label = {
@@ -409,7 +416,7 @@ fun AddTransactionSheet(
                                     },
                                     onClick = {
 
-                                        category = item.name
+                                        selectedCategory = item
 
                                         categoryExpanded = false
                                     }
@@ -471,63 +478,100 @@ fun AddTransactionSheet(
             Button(
                 onClick = {
 
-                    val finalCategory =
-                        if (createNewCategory) {
+                    if (createNewCategory) {
+
+                        onCreateCategory(
                             newCategory.trim()
-                        } else {
-                            category.trim()
+                        ) { categoryId ->
+
+                            if (categoryId != null) {
+
+                                val updatedTransaction =
+                                    Transaction(
+
+                                        id =
+                                            transaction?.id
+                                                ?: 0,
+
+                                        title =
+                                            title.trim(),
+
+                                        amount =
+                                            amount
+                                                .toDoubleOrNull()
+                                                ?: 0.0,
+
+                                        description =
+                                            description
+                                                .trim()
+                                                .ifBlank {
+                                                    null
+                                                },
+
+                                        type = type,
+
+                                        categoryId = categoryId,
+
+                                        subcategory =
+                                            subcategory
+                                                .trim()
+                                                .ifBlank {
+                                                    null
+                                                },
+
+                                        date = selectedDate
+                                    )
+
+                                onSave(
+                                    updatedTransaction
+                                )
+                            }
                         }
 
-                    // Si es una categoría nueva,
-                    // primero la guardamos en Room.
-                    if (
-                        createNewCategory &&
-                        finalCategory.isNotBlank()
-                    ) {
+                    } else {
 
-                        onCreateCategory(finalCategory)
-                    }
+                        val updatedTransaction =
+                            Transaction(
 
-                    val updatedTransaction =
-                        Transaction(
+                                id =
+                                    transaction?.id
+                                        ?: 0,
 
-                            id =
-                                transaction?.id
-                                    ?: 0,
+                                title =
+                                    title.trim(),
 
-                            title =
-                                title.trim(),
+                                amount =
+                                    amount
+                                        .toDoubleOrNull()
+                                        ?: 0.0,
 
-                            amount =
-                                amount
-                                    .toDoubleOrNull()
-                                    ?: 0.0,
+                                description =
+                                    description
+                                        .trim()
+                                        .ifBlank {
+                                            null
+                                        },
 
-                            description =
-                                description
-                                    .trim()
-                                    .ifBlank {
-                                        null
-                                    },
+                                type = type,
 
-                            type = type,
+                                categoryId =
+                                    selectedCategory?.id
+                                        ?: 0,
 
-                            category =
-                                finalCategory,
+                                subcategory =
+                                    subcategory
+                                        .trim()
+                                        .ifBlank {
+                                            null
+                                        },
 
-                            subcategory =
-                                subcategory
-                                    .trim()
-                                    .ifBlank {
-                                        null
-                                    },
+                                date = selectedDate
+                            )
 
-                            date = selectedDate
+                        onSave(
+                            updatedTransaction
                         )
-
-                    onSave(
-                        updatedTransaction
-                    )
+                    }
                 },
 
                 modifier = Modifier.fillMaxWidth(),
@@ -537,11 +581,10 @@ fun AddTransactionSheet(
                             amount.toDoubleOrNull() != null &&
                             amount.toDoubleOrNull()!! > 0 &&
                             (
-                                    category.isNotBlank() ||
+                                    selectedCategory != null ||
                                             newCategory.isNotBlank()
                                     )
             ) {
-
                 Text(
                     if (transaction == null)
                         "Guardar"

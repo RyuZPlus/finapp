@@ -6,7 +6,6 @@ import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -36,6 +35,10 @@ import com.example.finconapp.data.local.entity.Category
 import com.example.finconapp.data.repository.CategoryRepository
 import com.example.finconapp.ui.viewmodel.CategoryViewModel
 import com.example.finconapp.ui.viewmodel.CategoryViewModelFactory
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 sealed class Screen(val route: String) {
 
@@ -73,6 +76,12 @@ fun AppNavigation(
         mutableStateOf(false)
     }
 
+    val snackbarHostState = remember {
+        SnackbarHostState()
+    }
+
+    val scope = rememberCoroutineScope()
+
     val context = LocalContext.current
 
     val database = remember { DatabaseProvider.provide(context) }
@@ -91,7 +100,11 @@ fun AppNavigation(
 
 
     Scaffold(
-
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState
+            )
+        },
         floatingActionButton = {
 
             if (showFloatingActionButton) {
@@ -227,7 +240,8 @@ fun AppNavigation(
 
                 HomeScreen(
                     paddingValues = paddingValues,
-                    viewModel = transactionViewModel
+                    viewModel = transactionViewModel,
+                    categoriesList = categories
                 )
             }
 
@@ -240,13 +254,29 @@ fun AppNavigation(
                     paddingValues = paddingValues,
                     viewModel = transactionViewModel,
                     categoriesList = categories,
-                    onCreateCategory = { categoryName ->
+                    onCreateCategory = { categoryName, onCategoryCreated ->
 
                         categoryViewModel.insert(
                             Category(
                                 name = categoryName.trim()
                             )
-                        )
+                        ) { success, categoryId ->
+
+                            if (!success) {
+
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Esta categoría ya existe"
+                                    )
+                                }
+
+                                onCategoryCreated(null)
+
+                            } else {
+
+                                onCategoryCreated(categoryId)
+                            }
+                        }
                     }
                 )
             }
@@ -258,7 +288,9 @@ fun AppNavigation(
 
                 CategoryScreen(
                     paddingValues = paddingValues,
-                    viewModel = transactionViewModel
+                    viewModel = transactionViewModel,
+                    categoryViewModel = categoryViewModel,
+                    categoriesList = categories
                 )
             }
 
@@ -279,7 +311,6 @@ fun AppNavigation(
 
         AddTransactionSheet(
 
-            //categories = emptyList(),
             categories = categories,
 
             onDismiss = {
@@ -295,14 +326,27 @@ fun AppNavigation(
                 showAddSheet = false
             },
 
-        onCreateCategory = { categoryName ->
+            onCreateCategory = { categoryName, onCategoryCreated ->
 
-            categoryViewModel.insert(
-                Category(
-                    name = categoryName.trim()
-                )
-            )
-        }
+                categoryViewModel.insert(
+                    Category(
+                        name = categoryName.trim()
+                    )
+                ) { success, categoryId ->
+
+                    if (!success) {
+
+                        // Mostrar:
+                        // "Ya existe una categoría con ese nombre"
+
+                        onCategoryCreated(null)
+
+                    } else {
+
+                        onCategoryCreated(categoryId)
+                    }
+                }
+            }
         )
     }
 }

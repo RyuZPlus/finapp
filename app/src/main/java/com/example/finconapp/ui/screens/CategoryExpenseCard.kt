@@ -6,12 +6,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.finconapp.data.local.entity.Transaction
+import com.example.finconapp.data.local.entity.Category
 
 @Composable
 fun CategoryExpenseCard(
-    transactions: List<Transaction>
+    transactions: List<Transaction>,
+    categories: List<Category>
 ) {
-
     val expenses = transactions
         .filter { it.type == "Gasto" }
 
@@ -19,7 +20,12 @@ fun CategoryExpenseCard(
         .sumOf { it.amount }
 
     val expensesByCategory = expenses
-        .groupBy { it.category }
+        .groupBy { transaction ->
+            categories
+                .firstOrNull { it.id == transaction.categoryId }
+                ?.name
+                ?: "Sin categoría"
+        }
         .mapValues { (_, transactions) ->
             transactions.sumOf { it.amount }
         }
@@ -29,11 +35,9 @@ fun CategoryExpenseCard(
     Card(
         modifier = Modifier.fillMaxWidth()
     ) {
-
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-
             Text(
                 text = "Por categoría",
                 style = MaterialTheme.typography.titleLarge
@@ -44,18 +48,13 @@ fun CategoryExpenseCard(
             )
 
             if (expensesByCategory.isEmpty()) {
-
                 Text(
                     text = "No hay gastos registrados.",
                     style = MaterialTheme.typography.bodyMedium
                 )
-
             } else {
-
                 expensesByCategory.forEach { (category, amount) ->
 
-                    // Porcentaje que representa la categoría
-                    // respecto al total de gastos
                     val percentage = if (totalExpenses > 0) {
                         (amount / totalExpenses) * 100
                     } else {
@@ -67,12 +66,10 @@ fun CategoryExpenseCard(
                             .fillMaxWidth()
                             .padding(vertical = 6.dp)
                     ) {
-
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-
                             Text(
                                 text = category,
                                 style = MaterialTheme.typography.bodyMedium

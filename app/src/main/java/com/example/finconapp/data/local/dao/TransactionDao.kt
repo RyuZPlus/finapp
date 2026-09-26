@@ -10,10 +10,6 @@ interface TransactionDao {
     @Insert
     suspend fun insert(transaction: Transaction)
 
-    //@Query("SELECT * FROM transactions ORDER BY date DESC")
-    //Se genera la lista
-    //fun getAllTransactions(): Flow<List<Transaction>>
-
     @Query("""
         SELECT * FROM transactions
         WHERE date BETWEEN :startDate AND :endDate
@@ -23,6 +19,15 @@ interface TransactionDao {
         startDate: Long,
         endDate: Long
     ): Flow<List<Transaction>>
+
+    @Query("""
+        SELECT EXISTS(
+            SELECT 1
+            FROM transactions
+            WHERE categoryId = :categoryId
+        )
+    """)
+    suspend fun categoryHasTransactions(categoryId: Int): Boolean
 
     @Update
     suspend fun update(transaction: Transaction)

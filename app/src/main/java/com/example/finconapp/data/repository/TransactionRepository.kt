@@ -29,4 +29,12 @@ class TransactionRepository(
     suspend fun delete(transaction: Transaction) {
         transactionDao.delete(transaction)
     }
+
+    suspend fun categoryHasTransactions(
+        categoryId: Int
+    ): Boolean {
+        return transactionDao.categoryHasTransactions(
+            categoryId
+        )
+    }
 }

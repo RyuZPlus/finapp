@@ -21,10 +21,59 @@ class CategoryViewModel(
                 initialValue = emptyList()
             )
 
-    fun insert(category: Category) {
-
+    fun update(category: Category, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            repository.insertCategory(category)
+
+            val exists =
+                repository.categoryExistsExcept(
+                    category.name,
+                    category.id
+                )
+
+            if (exists) {
+                onResult(false)
+                return@launch
+            }
+
+            repository.update(category)
+
+            onResult(true)
+        }
+    }
+
+    fun insert(
+        category: Category,
+        onResult: (Boolean, Int?) -> Unit
+    ) {
+        viewModelScope.launch {
+
+            val exists =
+                repository.categoryExists(category.name)
+
+            if (exists) {
+                onResult(false, null)
+                return@launch
+            }
+
+            val categoryId =
+                repository.insertCategory(category)
+
+            onResult(true, categoryId)
+        }
+    }
+
+    fun delete(
+        categoryId: Int,
+        onResult: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+
+            val success =
+                repository.deleteCategoryIfEmpty(
+                    categoryId
+                )
+
+            onResult(success)
         }
     }
 }

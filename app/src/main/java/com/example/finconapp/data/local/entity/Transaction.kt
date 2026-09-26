@@ -13,7 +13,7 @@ data class Transaction(
     val amount: Double,
     val description: String? = null, //Opcional
     val type: String, //Gasto o ingreso
-    val category: String, //Negocio, doméstico, Colección, Gastos diarios
+    val categoryId: Int, //Negocio, doméstico, Colección, Gastos diarios
     val subcategory: String? = null, //Como tipo de negocio por ejemplo (opcional)
     val date: Long
 )

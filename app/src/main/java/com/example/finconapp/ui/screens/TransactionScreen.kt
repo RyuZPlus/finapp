@@ -25,7 +25,10 @@ fun TransactionScreen(
     paddingValues: PaddingValues,
     viewModel: TransactionViewModel,
     categoriesList: List<Category>,
-    onCreateCategory: (String) -> Unit
+    onCreateCategory: (
+        String,
+        (Int?) -> Unit
+    ) -> Unit
 ) {
 
     val transactions by viewModel.filteredTransactions.collectAsState()
@@ -67,12 +70,21 @@ fun TransactionScreen(
      */
     val displayedTransactions = remember(
         transactions,
+        categoriesList,
         searchText,
         selectedType,
         selectedCategory
     ) {
 
         transactions.filter { transaction ->
+
+            val categoryName =
+                categoriesList
+                    .firstOrNull {
+                        it.id == transaction.categoryId
+                    }
+                    ?.name
+                    ?: ""
 
             val matchesSearch =
                 searchText.isBlank() ||
@@ -84,7 +96,7 @@ fun TransactionScreen(
                             searchText,
                             ignoreCase = true
                         ) == true ||
-                        transaction.category.contains(
+                        categoryName.contains(
                             searchText,
                             ignoreCase = true
                         ) ||
@@ -99,7 +111,7 @@ fun TransactionScreen(
 
             val matchesCategory =
                 selectedCategory == null ||
-                        transaction.category == selectedCategory
+                        categoryName == selectedCategory
 
             matchesSearch &&
                     matchesType &&
@@ -122,7 +134,13 @@ fun TransactionScreen(
 
     val filterCategories =
         transactions
-            .map { it.category }
+            .mapNotNull { transaction ->
+                categoriesList
+                    .firstOrNull {
+                        it.id == transaction.categoryId
+                    }
+                    ?.name
+            }
             .distinct()
             .sorted()
 
@@ -346,6 +364,7 @@ fun TransactionScreen(
 
                         TransactionItem(
                             transaction = transaction,
+                            categories = categoriesList,
                             onClick = {
                                 selectedTransaction = transaction
                             },
@@ -366,6 +385,7 @@ fun TransactionScreen(
 
         TransactionDetailSheet(
             transaction = transaction,
+            categories = categoriesList,
             onDismiss = {
                 selectedTransaction = null
             },

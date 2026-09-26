@@ -13,14 +13,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.finconapp.data.local.entity.Category
 import com.example.finconapp.data.local.entity.Transaction
 
 @Composable
 fun TransactionItem(
     transaction: Transaction,
+    categories: List<Category>,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
+
+    val categoryName =
+        categories
+            .firstOrNull { it.id == transaction.categoryId }
+            ?.name
+            ?: "Sin categoría"
 
     Card(
         modifier = Modifier
@@ -51,7 +59,7 @@ fun TransactionItem(
                 )
 
                 Text(
-                    text = transaction.category,
+                    text = categoryName,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -74,7 +82,6 @@ fun TransactionItem(
             IconButton(
                 onClick = onDelete
             ) {
-
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = "Eliminar movimiento"

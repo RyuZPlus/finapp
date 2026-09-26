@@ -12,7 +12,41 @@ class CategoryRepository(
         return categoryDao.getAllCategories()
     }
 
-    suspend fun insertCategory(category: Category) {
-        categoryDao.insert(category)
+    suspend fun insertCategory(category: Category): Int {
+        return categoryDao.insert(category).toInt()
+    }
+
+    suspend fun update(category: Category) {
+        categoryDao.update(category)
+    }
+
+    suspend fun categoryExists(name: String): Boolean {
+        return categoryDao.countByName(name) > 0
+    }
+
+    suspend fun categoryExistsExcept(
+        name: String,
+        categoryId: Int
+    ): Boolean {
+        return categoryDao.countByNameExcludingId(
+            name,
+            categoryId
+        ) > 0
+    }
+
+    suspend fun deleteCategoryIfEmpty(
+        categoryId: Int
+    ): Boolean {
+
+        val transactionCount =
+            categoryDao.countTransactionsByCategory(categoryId)
+
+        if (transactionCount > 0) {
+            return false
+        }
+
+        categoryDao.delete(categoryId)
+
+        return true
     }
 }

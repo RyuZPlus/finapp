@@ -6,11 +6,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.finconapp.data.local.entity.Category
 import com.example.finconapp.data.local.entity.Transaction
 
 @Composable
 fun RecentTransactionsCard(
-    transactions: List<Transaction>
+    transactions: List<Transaction>,
+    categories: List<Category>
 ) {
 
     val recentTransactions = transactions
@@ -45,6 +47,14 @@ fun RecentTransactionsCard(
 
                 recentTransactions.forEach { transaction ->
 
+                    val categoryName =
+                        categories
+                            .firstOrNull {
+                                it.id == transaction.categoryId
+                            }
+                            ?.name
+                            ?: "Sin categoría"
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -58,14 +68,13 @@ fun RecentTransactionsCard(
 
                             // Descripción
                             Text(
-                                text = transaction.title
-                                    ?: "Sin título",
+                                text = transaction.title,
                                 style = MaterialTheme.typography.bodyLarge
                             )
 
                             // Categoría
                             Text(
-                                text = transaction.category,
+                                text = categoryName,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

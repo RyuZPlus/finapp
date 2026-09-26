@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.finconapp.data.local.entity.Transaction
+import com.example.finconapp.data.local.entity.Category
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.graphics.Color
@@ -18,6 +19,7 @@ import androidx.compose.runtime.setValue
 @Composable
 fun TransactionDetailSheet(
     transaction: Transaction,
+    categories: List<Category>,
     onDismiss: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
@@ -26,6 +28,12 @@ fun TransactionDetailSheet(
     var showDeleteDialog by remember {
         mutableStateOf(false)
     }
+
+    val categoryName =
+        categories
+            .firstOrNull { it.id == transaction.categoryId }
+            ?.name
+            ?: "Sin categoría"
 
     ModalBottomSheet(
         onDismissRequest = onDismiss
@@ -74,7 +82,7 @@ fun TransactionDetailSheet(
 
             DetailRow(
                 label = "Categoría",
-                value = transaction.category
+                value = categoryName
             )
 
             transaction.subcategory?.let {
