@@ -39,7 +39,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
-
+import com.example.finconapp.ui.viewmodel.SavingsGoalViewModel
 sealed class Screen(val route: String) {
 
     data object Home : Screen("home")
@@ -92,6 +92,9 @@ fun AppNavigation(
     val categoryViewModel: CategoryViewModel = viewModel( factory = CategoryViewModelFactory( categoryRepository ) )
 
     val categories by categoryViewModel.categories.collectAsState()
+
+    val savingsGoalViewModel: SavingsGoalViewModel =
+        viewModel()
 
     val showFloatingActionButton =
         currentRoute == Screen.Home.route ||
@@ -294,13 +297,39 @@ fun AppNavigation(
                 )
             }
 
-
             composable(
                 Screen.Savings.route
             ) {
 
                 SavingsScreen(
-                    paddingValues = paddingValues
+                    paddingValues = paddingValues,
+                    viewModel = savingsGoalViewModel,
+                    categories = categories,
+
+                    onCreateCategory = { categoryName, onCategoryCreated ->
+
+                        categoryViewModel.insert(
+                            Category(
+                                name = categoryName.trim()
+                            )
+                        ) { success, categoryId ->
+
+                            if (!success) {
+
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        "Esta categoría ya existe"
+                                    )
+                                }
+
+                                onCategoryCreated(null)
+
+                            } else {
+
+                                onCategoryCreated(categoryId)
+                            }
+                        }
+                    }
                 )
             }
         }

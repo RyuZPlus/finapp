@@ -25,6 +25,7 @@ import com.example.finconapp.ui.viewmodel.TransactionViewModel
 import com.example.finconapp.ui.components.TransactionDayHeader
 import com.example.finconapp.ui.components.formatTransactionDay
 import com.example.finconapp.ui.viewmodel.CategoryViewModel
+import com.example.finconapp.ui.components.formatCurrency
 
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
@@ -39,7 +40,6 @@ import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
 
-import java.text.NumberFormat
 import java.util.Locale
 import java.util.Calendar
 
@@ -724,15 +724,6 @@ private fun CategoryTransactionItem(
             )
         }
     }
-}
-
-private fun formatCurrency(
-    amount: Double
-): String {
-
-    return NumberFormat
-        .getCurrencyInstance(Locale("es", "MX"))
-        .format(amount)
 }
 
 private fun getMonthlyCategoryData(
