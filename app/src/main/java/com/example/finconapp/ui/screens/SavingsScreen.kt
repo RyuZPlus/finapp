@@ -8,6 +8,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import com.example.finconapp.data.local.entity.Category
 import com.example.finconapp.data.local.entity.SavingsGoal
 import com.example.finconapp.ui.viewmodel.SavingsGoalViewModel
@@ -30,6 +32,10 @@ fun SavingsScreen(
 
     var showAddGoalSheet by remember {
         mutableStateOf(false)
+    }
+
+    var selectedGoal by remember {
+        mutableStateOf<SavingsGoal?>(null)
     }
 
     // --------------------------------
@@ -200,7 +206,10 @@ fun SavingsScreen(
 
                     SavingsGoalCard(
                         goal = goal,
-                        categories = categories
+                        categories = categories,
+                        onUpdateSavings = {
+                            selectedGoal = goal
+                        }
                     )
                 }
             }
@@ -212,22 +221,38 @@ fun SavingsScreen(
     // --------------------------------
 
     if (showAddGoalSheet) {
-
         AddSavingsGoalSheet(
             categories = categories,
-
             onDismiss = {
                 showAddGoalSheet = false
             },
-
             onSave = { goal ->
-
                 viewModel.insert(goal)
-
                 showAddGoalSheet = false
             },
-
             onCreateCategory = onCreateCategory
+        )
+    }
+
+// --------------------------------
+// MODIFICAR AHORRO
+// --------------------------------
+
+    selectedGoal?.let { goal ->
+        AddSavingsIncomeDialog(
+            goal = goal,
+            onDismiss = {
+                selectedGoal = null
+            },
+            onConfirm = { amount ->
+                viewModel.update(
+                    goal.copy(
+                        initialAmount = amount
+                    )
+                )
+
+                selectedGoal = null
+            }
         )
     }
 }
@@ -235,7 +260,8 @@ fun SavingsScreen(
 @Composable
 private fun SavingsGoalCard(
     goal: SavingsGoal,
-    categories: List<Category>
+    categories: List<Category>,
+    onUpdateSavings: () -> Unit
 ) {
     val categoryName =
         categories
@@ -325,8 +351,178 @@ private fun SavingsGoalCard(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
+            Spacer(
+                modifier = Modifier.height(12.dp)
+            )
+
+            Button(
+                onClick = onUpdateSavings,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Gestionar ahorro")
+            }
         }
     }
+}
+
+@Composable
+private fun AddSavingsIncomeDialog(
+    goal: SavingsGoal,
+    onDismiss: () -> Unit,
+    onConfirm: (Double) -> Unit
+) {
+    var amountText by remember(goal.id) {
+        mutableStateOf("")
+    }
+
+    var operation by remember(goal.id) {
+        mutableStateOf("abonar")
+    }
+
+    var errorMessage by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Gestionar ahorro")
+        },
+        text = {
+            Column {
+                Text("Meta: ${goal.name}")
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    "Saldo actual: ${
+                        formatCurrency(goal.initialAmount)
+                    }"
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(
+                    "Operación",
+                    style = MaterialTheme.typography.titleSmall
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = operation == "abonar",
+                        onClick = {
+                            operation = "abonar"
+                            amountText = ""
+                            errorMessage = null
+                        }
+                    )
+                    Text("Abonar")
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = operation == "retirar",
+                        onClick = {
+                            operation = "retirar"
+                            amountText = ""
+                            errorMessage = null
+                        }
+                    )
+                    Text("Retirar")
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = operation == "establecer",
+                        onClick = {
+                            operation = "establecer"
+                            amountText =
+                                goal.initialAmount.toString()
+                            errorMessage = null
+                        }
+                    )
+                    Text("Establecer saldo")
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = amountText,
+                    onValueChange = {
+                        amountText = it
+                        errorMessage = null
+                    },
+                    label = {
+                        Text(
+                            if (operation == "establecer") {
+                                "Nuevo saldo"
+                            } else {
+                                "Importe"
+                            }
+                        )
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal
+                    ),
+                    isError = errorMessage != null,
+                    supportingText = {
+                        errorMessage?.let { Text(it) }
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val amount = amountText
+                        .trim()
+                        .replace(",", ".")
+                        .toDoubleOrNull()
+
+                    if (
+                        amount == null ||
+                        !amount.isFinite() ||
+                        amount < 0.0 ||
+                        (operation != "establecer" && amount == 0.0)
+                    ) {
+                        errorMessage =
+                            "Introduce un importe válido."
+                    } else {
+                        val newBalance = when (operation) {
+                            "abonar" ->
+                                goal.initialAmount + amount
+
+                            "retirar" ->
+                                goal.initialAmount - amount
+
+                            else -> amount
+                        }
+
+                        if (newBalance < 0.0) {
+                            errorMessage =
+                                "El retiro supera el ahorro disponible."
+                        } else {
+                            onConfirm(newBalance)
+                        }
+                    }
+                }
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
 }
 
 private fun formatSavingsDate(timestamp: Long): String {
