@@ -11,6 +11,10 @@ class SavingsGoalRepository(
         return dao.getAllSavingsGoals()
     }
 
+    suspend fun categoryHasSavingsGoals(categoryId: Int): Boolean {
+        return dao.categoryHasSavingsGoals(categoryId)
+    }
+
     suspend fun insert(goal: SavingsGoal) {
         dao.insert(goal)
     }

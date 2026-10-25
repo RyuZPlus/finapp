@@ -3,10 +3,11 @@ package com.example.finconapp.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.finconapp.data.local.entity.Category
+import kotlinx.coroutines.launch
+import com.example.finconapp.data.repository.CategoryDeleteResult
 import com.example.finconapp.data.repository.CategoryRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class CategoryViewModel(
     private val repository: CategoryRepository
@@ -62,18 +63,13 @@ class CategoryViewModel(
         }
     }
 
-    fun delete(
+    fun deleteCategory(
         categoryId: Int,
-        onResult: (Boolean) -> Unit
+        onResult: (CategoryDeleteResult) -> Unit
     ) {
         viewModelScope.launch {
-
-            val success =
-                repository.deleteCategoryIfEmpty(
-                    categoryId
-                )
-
-            onResult(success)
+            val result = repository.deleteCategory(categoryId)
+            onResult(result)
         }
     }
 }

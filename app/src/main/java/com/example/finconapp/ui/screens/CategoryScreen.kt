@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Edit
 import com.example.finconapp.data.local.entity.Category
 
 import com.example.finconapp.data.local.entity.Transaction
+import com.example.finconapp.data.repository.CategoryDeleteResult
 import com.example.finconapp.ui.components.DateRangeSelector
 import com.example.finconapp.ui.viewmodel.TransactionViewModel
 import com.example.finconapp.ui.components.TransactionDayHeader
@@ -74,8 +75,8 @@ fun CategoryScreen(
         mutableStateOf(false)
     }
 
-    var deleteCategoryError by remember {
-        mutableStateOf(false)
+    var deleteCategoryMessage by remember {
+        mutableStateOf<String?>(null)
     }
 
     val selectedCategory =
@@ -141,9 +142,9 @@ fun CategoryScreen(
                 }
 
                 IconButton(
-                    enabled = !selectedCategoryHasTransactions,
+                    //enabled = !selectedCategoryHasTransactions,
                     onClick = {
-                        deleteCategoryError = false
+                        deleteCategoryMessage = null
                         showDeleteCategoryDialog = true
                     }
                 ) {
@@ -238,29 +239,48 @@ fun CategoryScreen(
                 },
 
                 text = {
-                    Text(
-                        "¿Deseas eliminar la categoría " +
-                                "\"${selectedCategory.name}\"?"
-                    )
+                    Column {
+                        Text(
+                            "¿Deseas eliminar la categoría \"${selectedCategory.name}\"?"
+                        )
+
+                        deleteCategoryMessage?.let { message ->
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Text(
+                                text = message,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
                 },
 
                 confirmButton = {
                     TextButton(
                         onClick = {
+                            categoryViewModel.deleteCategory(selectedCategory.id) { result ->
+                                when (result) {
+                                    CategoryDeleteResult.DELETED -> {
+                                        showDeleteCategoryDialog = false
+                                        selectedCategoryId = null
+                                        deleteCategoryMessage = null
+                                    }
 
-                            categoryViewModel.delete(
-                                selectedCategory.id
-                            ) { success ->
+                                    CategoryDeleteResult.HAS_TRANSACTIONS -> {
+                                        deleteCategoryMessage =
+                                            "No se puede eliminar esta categoría porque tiene movimientos asociados."
+                                    }
 
-                                if (success) {
+                                    CategoryDeleteResult.HAS_SAVINGS_GOALS -> {
+                                        deleteCategoryMessage =
+                                            "No se puede eliminar esta categoría porque está asociada a una o más metas de ahorro."
+                                    }
 
-                                    showDeleteCategoryDialog = false
-                                    selectedCategoryId = null
-
-                                } else {
-
-                                    showDeleteCategoryDialog = false
-                                    deleteCategoryError = true
+                                    CategoryDeleteResult.NOT_FOUND -> {
+                                        deleteCategoryMessage =
+                                            "Esta categoría ya no existe."
+                                    }
                                 }
                             }
                         }

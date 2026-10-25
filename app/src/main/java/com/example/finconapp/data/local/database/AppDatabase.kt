@@ -15,7 +15,7 @@ import com.example.finconapp.data.local.entity.SavingsGoal
         Category::class,
         SavingsGoal::class
     ],
-    version = 4
+    version = 5
 )
 abstract class AppDatabase : RoomDatabase() {
 

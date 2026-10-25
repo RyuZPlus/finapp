@@ -29,4 +29,13 @@ interface SavingsGoalDao {
         """
     )
     fun getAllSavingsGoals(): Flow<List<SavingsGoal>>
+
+    @Query("""
+        SELECT EXISTS(
+            SELECT 1
+            FROM savings_goals
+            WHERE categoryId = :categoryId
+        )
+    """)
+    suspend fun categoryHasSavingsGoals(categoryId: Int): Boolean
 }

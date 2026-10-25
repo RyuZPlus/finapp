@@ -34,19 +34,30 @@ class CategoryRepository(
         ) > 0
     }
 
-    suspend fun deleteCategoryIfEmpty(
+    suspend fun deleteCategory(
         categoryId: Int
-    ): Boolean {
+    ): CategoryDeleteResult {
 
         val transactionCount =
             categoryDao.countTransactionsByCategory(categoryId)
 
         if (transactionCount > 0) {
-            return false
+            return CategoryDeleteResult.HAS_TRANSACTIONS
         }
 
-        categoryDao.delete(categoryId)
+        val savingsGoalCount =
+            categoryDao.countSavingsGoalsByCategory(categoryId)
 
-        return true
+        if (savingsGoalCount > 0) {
+            return CategoryDeleteResult.HAS_SAVINGS_GOALS
+        }
+
+        val deletedRows = categoryDao.delete(categoryId)
+
+        return if (deletedRows > 0) {
+            CategoryDeleteResult.DELETED
+        } else {
+            CategoryDeleteResult.NOT_FOUND
+        }
     }
 }

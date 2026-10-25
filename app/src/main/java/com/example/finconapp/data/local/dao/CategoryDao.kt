@@ -47,8 +47,17 @@ interface CategoryDao {
     ): Int
 
     @Query("""
+        SELECT COUNT(*)
+        FROM savings_goals
+        WHERE categoryId = :categoryId
+    """)
+    suspend fun countSavingsGoalsByCategory(
+        categoryId: Int
+    ): Int
+
+    @Query("""
         DELETE FROM categories
         WHERE id = :categoryId
     """)
-    suspend fun delete(categoryId: Int)
+    suspend fun delete(categoryId: Int): Int
 }

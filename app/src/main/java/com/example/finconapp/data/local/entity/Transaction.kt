@@ -1,19 +1,34 @@
 package com.example.finconapp.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-//estructura de la tabla de base de datos sqlite
-@Entity(tableName = "transactions")
+@Entity(
+    tableName = "transactions",
+    foreignKeys = [
+        ForeignKey(
+            entity = Category::class,
+            parentColumns = ["id"],
+            childColumns = ["categoryId"],
+            onDelete = ForeignKey.RESTRICT
+        )
+    ],
+    indices = [
+        Index(value = ["categoryId"])
+    ]
+)
 data class Transaction(
+
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
 
     val title: String,
     val amount: Double,
-    val description: String? = null, //Opcional
-    val type: String, //Gasto o ingreso
-    val categoryId: Int, //Negocio, doméstico, Colección, Gastos diarios
-    val subcategory: String? = null, //Como tipo de negocio por ejemplo (opcional)
+    val description: String? = null,
+    val type: String,
+    val categoryId: Int,
+    val subcategory: String? = null,
     val date: Long
 )
