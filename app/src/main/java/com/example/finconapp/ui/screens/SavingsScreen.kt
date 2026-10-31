@@ -20,7 +20,6 @@ import java.util.Locale
 import kotlin.math.min
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.filled.Edit
 
 @Composable
