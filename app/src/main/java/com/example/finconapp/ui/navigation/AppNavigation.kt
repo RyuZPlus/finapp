@@ -39,6 +39,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
+import com.example.finconapp.ui.screens.BackupScreen
 import com.example.finconapp.ui.viewmodel.SavingsGoalViewModel
 sealed class Screen(val route: String) {
 
@@ -49,6 +50,8 @@ sealed class Screen(val route: String) {
     data object Categories : Screen("categories")
 
     data object Savings : Screen("savings")
+
+    data object Backup : Screen("backup")
 }
 
 
@@ -68,7 +71,8 @@ fun AppNavigation(
         Screen.Home,
         Screen.Transactions,
         Screen.Categories,
-        Screen.Savings
+        Screen.Savings,
+        Screen.Backup
     )
 
 
@@ -200,6 +204,14 @@ fun AppNavigation(
                                             "Ahorros"
                                     )
                                 }
+
+                                Screen.Backup -> {
+
+                                    Icon(
+                                        imageVector = Icons.Default.AccountBalance,
+                                        contentDescription = "Respaldo"
+                                    )
+                                }
                             }
                         },
 
@@ -220,6 +232,9 @@ fun AppNavigation(
 
                                     Screen.Savings ->
                                         "Ahorros"
+
+                                    Screen.Backup ->
+                                        "Respaldo"
                                 }
                             )
                         }
@@ -331,6 +346,10 @@ fun AppNavigation(
                         }
                     }
                 )
+            }
+            composable(Screen.Backup.route) {
+
+                BackupScreen()
             }
         }
     }

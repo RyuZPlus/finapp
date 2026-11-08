@@ -10,6 +10,15 @@ interface TransactionDao {
     @Insert
     suspend fun insert(transaction: Transaction)
 
+    @Insert
+    suspend fun insertAll(transactions: List<Transaction>)
+
+    @Query("SELECT * FROM transactions ORDER BY id ASC")
+    suspend fun getAllTransactionsForBackup(): List<Transaction>
+
+    @Query("DELETE FROM transactions")
+    suspend fun deleteAll()
+
     @Query("""
         SELECT * FROM transactions
         WHERE date BETWEEN :startDate AND :endDate

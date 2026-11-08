@@ -8,6 +8,14 @@ class TransactionRepository(
     private val transactionDao: TransactionDao
 ) {
 
+    suspend fun getAllTransactionsForBackup(): List<Transaction> {
+        return transactionDao.getAllTransactionsForBackup()
+    }
+
+    suspend fun insertAllTransactions(transactions: List<Transaction>) {
+        transactionDao.insertAll(transactions)
+    }
+
     fun getTransactionsByDateRange(
         startDate: Long,
         endDate: Long

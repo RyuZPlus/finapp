@@ -7,12 +7,15 @@ import kotlinx.coroutines.flow.Flow
 class SavingsGoalRepository(
     private val dao: SavingsGoalDao
 ) {
-    fun getAllSavingsGoals(): Flow<List<SavingsGoal>> {
-        return dao.getAllSavingsGoals()
+    suspend fun getAllSavingsGoalsForBackup(): List<SavingsGoal> {
+        return dao.getAllSavingsGoalsForBackup()
     }
 
-    suspend fun categoryHasSavingsGoals(categoryId: Int): Boolean {
-        return dao.categoryHasSavingsGoals(categoryId)
+    suspend fun insertAllSavingsGoals(goals: List<SavingsGoal>) {
+        dao.insertAll(goals)
+    }
+    fun getAllSavingsGoals(): Flow<List<SavingsGoal>> {
+        return dao.getAllSavingsGoals()
     }
 
     suspend fun insert(goal: SavingsGoal) {

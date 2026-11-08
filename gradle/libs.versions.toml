@@ -1,7 +1,7 @@
 [versions]
 room = "2.8.5"
 ksp = "2.3.9"
-agp = "9.5.0"
+agp = "9.5.1"
 coreKtx = "1.19.1"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -14,6 +14,7 @@ lifecycle = "2.11.0"
 navigationCompose = "2.10.2"
 vico = "3.3.1"
 foundation = "1.12.1"
+serialization = "1.12.0"
 
 [libraries]
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
@@ -38,9 +39,11 @@ androidx-compose-material-icons-extended = { module = "androidx.compose.material
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
 vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 

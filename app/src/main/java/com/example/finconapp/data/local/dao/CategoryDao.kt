@@ -13,11 +13,20 @@ interface CategoryDao {
     @Insert
     suspend fun insert(category: Category): Long
 
+    @Insert
+    suspend fun insertAll(categories: List<Category>)
+
+    @Query("DELETE FROM categories")
+    suspend fun deleteAll()
+
     @Update
     suspend fun update(category: Category)
 
     @Query("SELECT * FROM categories ORDER BY name ASC")
     fun getAllCategories(): Flow<List<Category>>
+
+    @Query("SELECT * FROM categories ORDER BY id ASC")
+    suspend fun getAllCategoriesForBackup(): List<Category>
 
     @Query("""
         SELECT COUNT(*) 

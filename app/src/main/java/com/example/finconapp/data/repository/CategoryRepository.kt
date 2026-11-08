@@ -8,6 +8,14 @@ class CategoryRepository(
     private val categoryDao: CategoryDao
 ) {
 
+    suspend fun getAllCategoriesForBackup(): List<Category> {
+        return categoryDao.getAllCategoriesForBackup()
+    }
+
+    suspend fun insertAllCategories(categories: List<Category>) {
+        categoryDao.insertAll(categories)
+    }
+
     fun getAllCategories(): Flow<List<Category>> {
         return categoryDao.getAllCategories()
     }

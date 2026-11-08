@@ -13,6 +13,15 @@ interface SavingsGoalDao {
     @Insert
     suspend fun insert(goal: SavingsGoal)
 
+    @Insert
+    suspend fun insertAll(goals: List<SavingsGoal>)
+
+    @Query("SELECT * FROM savings_goals ORDER BY id ASC")
+    suspend fun getAllSavingsGoalsForBackup(): List<SavingsGoal>
+
+    @Query("DELETE FROM savings_goals")
+    suspend fun deleteAll()
+
     @Update
     suspend fun update(goal: SavingsGoal)
 
