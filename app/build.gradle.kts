@@ -52,6 +52,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.vico.compose)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.google.play.services.auth)
     ksp(libs.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
