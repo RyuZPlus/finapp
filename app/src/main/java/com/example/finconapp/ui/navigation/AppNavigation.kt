@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.FloatingActionButton
@@ -25,7 +26,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.finconapp.ui.screens.AddTransactionSheet
 import com.example.finconapp.ui.screens.CategoryScreen
 import com.example.finconapp.ui.screens.HomeScreen
-import com.example.finconapp.ui.screens.SavingsScreen
 import com.example.finconapp.ui.screens.TransactionScreen
 import com.example.finconapp.ui.viewmodel.TransactionViewModel
 import androidx.compose.runtime.collectAsState
@@ -40,7 +40,9 @@ import androidx.compose.material3.SnackbarHostState
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import com.example.finconapp.ui.screens.BackupScreen
-import com.example.finconapp.ui.viewmodel.SavingsGoalViewModel
+import com.example.finconapp.ui.screens.PendingPaymentScreen
+import com.example.finconapp.ui.viewmodel.PendingPaymentViewModel
+
 sealed class Screen(val route: String) {
 
     data object Home : Screen("home")
@@ -49,7 +51,7 @@ sealed class Screen(val route: String) {
 
     data object Categories : Screen("categories")
 
-    data object Savings : Screen("savings")
+    data object PendingPayments : Screen("pending_payments")
 
     data object Backup : Screen("backup")
 }
@@ -71,7 +73,7 @@ fun AppNavigation(
         Screen.Home,
         Screen.Transactions,
         Screen.Categories,
-        Screen.Savings,
+        Screen.PendingPayments,
         Screen.Backup
     )
 
@@ -97,7 +99,7 @@ fun AppNavigation(
 
     val categories by categoryViewModel.categories.collectAsState()
 
-    val savingsGoalViewModel: SavingsGoalViewModel =
+    val pendingPaymentViewModel: PendingPaymentViewModel =
         viewModel()
 
     val showFloatingActionButton =
@@ -195,20 +197,17 @@ fun AppNavigation(
                                     )
                                 }
 
-                                Screen.Savings -> {
-
+                                Screen.PendingPayments -> {
                                     Icon(
-                                        imageVector =
-                                            Icons.Default.AccountBalance,
-                                        contentDescription =
-                                            "Ahorros"
+                                        imageVector = Icons.Default.AccountBalance,
+                                        contentDescription = "Pagos pendientes"
                                     )
                                 }
 
                                 Screen.Backup -> {
 
                                     Icon(
-                                        imageVector = Icons.Default.AccountBalance,
+                                        imageVector = Icons.Default.Backup,
                                         contentDescription = "Respaldo"
                                     )
                                 }
@@ -230,8 +229,8 @@ fun AppNavigation(
                                     Screen.Categories ->
                                         "Categorías"
 
-                                    Screen.Savings ->
-                                        "Ahorros"
+                                    Screen.PendingPayments ->
+                                        "Pendientes"
 
                                     Screen.Backup ->
                                         "Respaldo"
@@ -312,15 +311,12 @@ fun AppNavigation(
                 )
             }
 
-            composable(
-                Screen.Savings.route
-            ) {
+            composable(Screen.PendingPayments.route) {
 
-                SavingsScreen(
+                PendingPaymentScreen(
                     paddingValues = paddingValues,
-                    viewModel = savingsGoalViewModel,
+                    viewModel = pendingPaymentViewModel,
                     categories = categories,
-
                     onCreateCategory = { categoryName, onCategoryCreated ->
 
                         categoryViewModel.insert(

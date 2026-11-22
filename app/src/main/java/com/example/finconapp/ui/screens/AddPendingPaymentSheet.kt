@@ -1,3 +1,4 @@
+
 package com.example.finconapp.ui.screens
 
 import android.app.DatePickerDialog
@@ -14,41 +15,40 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.finconapp.data.local.entity.Category
-import com.example.finconapp.data.local.entity.SavingsGoal
+import com.example.finconapp.data.local.entity.PendingPayment
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddSavingsGoalSheet(
+fun AddPendingPaymentSheet(
     categories: List<Category>,
     onDismiss: () -> Unit,
-    onSave: (SavingsGoal) -> Unit,
+    onSave: (PendingPayment) -> Unit,
     onCreateCategory: (String, (Int?) -> Unit) -> Unit
 ) {
 
     val context = LocalContext.current
-
     val scrollState = rememberScrollState()
 
     // --------------------------------
     // CAMPOS
     // --------------------------------
 
-    var name by remember {
-        mutableStateOf("")
-    }
+    var name by remember { mutableStateOf("") }
 
     var selectedCategoryId by remember {
         mutableStateOf<Int?>(null)
     }
 
-    var targetAmount by remember {
+    var amount by remember { mutableStateOf("") }
+
+    var paidAmount by remember {
         mutableStateOf("")
     }
 
-    var currentAmount by remember {
+    var description by remember {
         mutableStateOf("")
     }
 
@@ -88,11 +88,15 @@ fun AddSavingsGoalSheet(
         mutableStateOf(false)
     }
 
-    var targetError by remember {
+    var amountError by remember {
         mutableStateOf(false)
     }
 
-    var currentAmountError by remember {
+    var paidAmountError by remember {
+        mutableStateOf(false)
+    }
+
+    var dateError by remember {
         mutableStateOf(false)
     }
 
@@ -132,13 +136,11 @@ fun AddSavingsGoalSheet(
             // --------------------------------
 
             Text(
-                text = "Nueva meta de ahorro",
+                text = "Nuevo pago pendiente",
                 style = MaterialTheme.typography.headlineSmall
             )
 
-            Spacer(
-                modifier = Modifier.height(20.dp)
-            )
+            Spacer(modifier = Modifier.height(20.dp))
 
             // --------------------------------
             // NOMBRE
@@ -151,11 +153,13 @@ fun AddSavingsGoalSheet(
                     nameError = false
                 },
                 label = {
-                    Text("Nombre")
+                    Text("Nombre del pago")
+                },
+                placeholder = {
+                    Text("Ej. Servicio de internet")
                 },
                 isError = nameError,
                 supportingText = {
-
                     if (nameError) {
                         Text("Ingresa un nombre")
                     }
@@ -164,9 +168,7 @@ fun AddSavingsGoalSheet(
                 singleLine = true
             )
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             // --------------------------------
             // CATEGORÍA
@@ -177,13 +179,7 @@ fun AddSavingsGoalSheet(
                 style = MaterialTheme.typography.titleMedium
             )
 
-            Spacer(
-                modifier = Modifier.height(4.dp)
-            )
-
-            // --------------------------------
-            // CREAR NUEVA CATEGORÍA
-            // --------------------------------
+            Spacer(modifier = Modifier.height(4.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth()
@@ -211,10 +207,6 @@ fun AddSavingsGoalSheet(
                 )
             }
 
-            // --------------------------------
-            // CATEGORÍA NUEVA
-            // --------------------------------
-
             if (createNewCategory) {
 
                 OutlinedTextField(
@@ -228,7 +220,6 @@ fun AddSavingsGoalSheet(
                     },
                     isError = newCategoryError,
                     supportingText = {
-
                         if (newCategoryError) {
                             Text("Ingresa el nombre de la categoría")
                         }
@@ -238,10 +229,6 @@ fun AddSavingsGoalSheet(
                 )
 
             } else {
-
-                // --------------------------------
-                // CATEGORÍAS EXISTENTES
-                // --------------------------------
 
                 ExposedDropdownMenuBox(
                     expanded = categoryExpanded,
@@ -264,7 +251,6 @@ fun AddSavingsGoalSheet(
                         },
                         isError = categoryError,
                         supportingText = {
-
                             if (categoryError) {
                                 Text("Selecciona una categoría")
                             }
@@ -276,7 +262,9 @@ fun AddSavingsGoalSheet(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor()
+                            .menuAnchor(
+                                ExposedDropdownMenuAnchorType.PrimaryNotEditable
+                            )
                     )
 
                     ExposedDropdownMenu(
@@ -307,9 +295,7 @@ fun AddSavingsGoalSheet(
                                     },
                                     onClick = {
 
-                                        selectedCategoryId =
-                                            category.id
-
+                                        selectedCategoryId = category.id
                                         categoryError = false
                                         categoryExpanded = false
                                     }
@@ -320,29 +306,29 @@ fun AddSavingsGoalSheet(
                 }
             }
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             // --------------------------------
-            // OBJETIVO
+            // IMPORTE TOTAL
             // --------------------------------
 
             OutlinedTextField(
-                value = targetAmount,
+                value = amount,
                 onValueChange = {
-                    targetAmount = it
-                    targetError = false
-                    currentAmountError = false
+                    amount = it
+                    amountError = false
+                    paidAmountError = false
                 },
                 label = {
-                    Text("Objetivo")
+                    Text("Importe total")
                 },
-                isError = targetError,
+                placeholder = {
+                    Text("0.00")
+                },
+                isError = amountError,
                 supportingText = {
-
-                    if (targetError) {
-                        Text("Ingresa un objetivo mayor a $0")
+                    if (amountError) {
+                        Text("Ingresa un importe mayor a $0")
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -352,29 +338,29 @@ fun AddSavingsGoalSheet(
                 )
             )
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             // --------------------------------
-            // AHORRO ACTUAL
+            // IMPORTE ABONADO
             // --------------------------------
 
             OutlinedTextField(
-                value = currentAmount,
+                value = paidAmount,
                 onValueChange = {
-                    currentAmount = it
-                    currentAmountError = false
+                    paidAmount = it
+                    paidAmountError = false
                 },
                 label = {
-                    Text("Ahorro actual (opcional)")
+                    Text("Importe abonado (opcional)")
                 },
-                isError = currentAmountError,
+                placeholder = {
+                    Text("0.00")
+                },
+                isError = paidAmountError,
                 supportingText = {
-
-                    if (currentAmountError) {
+                    if (paidAmountError) {
                         Text(
-                            "El ahorro actual no puede superar el objetivo"
+                            "El abono no puede ser negativo ni superar el importe total"
                         )
                     }
                 },
@@ -385,12 +371,10 @@ fun AddSavingsGoalSheet(
                 )
             )
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
+            Spacer(modifier = Modifier.height(12.dp))
 
             // --------------------------------
-            // FECHA LÍMITE
+            // FECHA DE VENCIMIENTO
             // --------------------------------
 
             OutlinedButton(
@@ -420,8 +404,8 @@ fun AddSavingsGoalSheet(
                                 0
                             )
 
-                            selectedDate =
-                                calendar.timeInMillis
+                            selectedDate = calendar.timeInMillis
+                            dateError = false
                         },
                         calendar.get(Calendar.YEAR),
                         calendar.get(Calendar.MONTH),
@@ -432,19 +416,24 @@ fun AddSavingsGoalSheet(
             ) {
 
                 Icon(
-                    imageVector =
-                        Icons.Default.CalendarToday,
+                    imageVector = Icons.Default.CalendarToday,
                     contentDescription = null
                 )
 
-                Spacer(
-                    modifier = Modifier.width(8.dp)
-                )
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
                     text = selectedDate?.let {
-                        "Fecha límite: ${dateFormatter.format(it)}"
-                    } ?: "Agregar fecha límite"
+                        "Vencimiento: ${dateFormatter.format(it)}"
+                    } ?: "Seleccionar vencimiento"
+                )
+            }
+
+            if (dateError) {
+                Text(
+                    text = "Selecciona una fecha de vencimiento",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
                 )
             }
 
@@ -455,14 +444,33 @@ fun AddSavingsGoalSheet(
                         selectedDate = null
                     }
                 ) {
-
                     Text("Quitar fecha")
                 }
             }
 
-            Spacer(
-                modifier = Modifier.height(20.dp)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // --------------------------------
+            // DESCRIPCIÓN
+            // --------------------------------
+
+            OutlinedTextField(
+                value = description,
+                onValueChange = {
+                    description = it
+                },
+                label = {
+                    Text("Descripción (opcional)")
+                },
+                placeholder = {
+                    Text("Detalles adicionales del pago")
+                },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2,
+                maxLines = 4
             )
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             // --------------------------------
             // GUARDAR
@@ -471,17 +479,13 @@ fun AddSavingsGoalSheet(
             Button(
                 onClick = {
 
-                    // -------------------------
-                    // CONVERSIONES
-                    // -------------------------
-
-                    val target =
-                        targetAmount
+                    val total =
+                        amount
                             .replace(",", ".")
                             .toDoubleOrNull()
 
-                    val current =
-                        currentAmount
+                    val paid =
+                        paidAmount
                             .ifBlank { "0" }
                             .replace(",", ".")
                             .toDoubleOrNull()
@@ -490,8 +494,7 @@ fun AddSavingsGoalSheet(
                     // VALIDACIONES
                     // -------------------------
 
-                    nameError =
-                        name.trim().isBlank()
+                    nameError = name.trim().isBlank()
 
                     categoryError =
                         !createNewCategory &&
@@ -501,40 +504,50 @@ fun AddSavingsGoalSheet(
                         createNewCategory &&
                                 newCategory.trim().isBlank()
 
-                    targetError =
-                        target == null ||
-                                target <= 0
+                    amountError =
+                        total == null ||
+                                !total.isFinite() ||
+                                total <= 0.0
 
-                    currentAmountError =
-                        current == null ||
-                                current < 0 ||
-                                (
-                                        target != null &&
-                                                current > target
-                                        )
+                    paidAmountError =
+                        paid == null ||
+                                !paid.isFinite() ||
+                                paid < 0.0 ||
+                                (total != null && paid > total)
+
+                    dateError = selectedDate == null
 
                     if (
                         nameError ||
                         categoryError ||
                         newCategoryError ||
-                        targetError ||
-                        currentAmountError
+                        amountError ||
+                        paidAmountError ||
+                        dateError
                     ) {
                         return@Button
                     }
 
                     // -------------------------
-                    // GUARDAR META
+                    // CREAR PAGO
+                    // -------------------------
+
+                    val totalAmount = total!!
+                    val initialPaidAmount = paid!!
+
+                    val paymentStatus =
+                        if (initialPaidAmount >= totalAmount) {
+                            "PAID"
+                        } else {
+                            "PENDING"
+                        }
+
+                    // -------------------------
+                    // GUARDAR CON NUEVA CATEGORÍA
                     // -------------------------
 
                     if (createNewCategory) {
 
-                        /*
-                         * Primero creamos la categoría.
-                         *
-                         * El callback devolverá el ID
-                         * generado por Room.
-                         */
                         onCreateCategory(
                             newCategory.trim()
                         ) { categoryId ->
@@ -542,12 +555,16 @@ fun AddSavingsGoalSheet(
                             if (categoryId != null) {
 
                                 onSave(
-                                    SavingsGoal(
+                                    PendingPayment(
                                         name = name.trim(),
                                         categoryId = categoryId,
-                                        targetAmount = target!!,
-                                        initialAmount = current!!,
-                                        deadline = selectedDate
+                                        amount = totalAmount,
+                                        paidAmount = initialPaidAmount,
+                                        dueDate = selectedDate!!,
+                                        status = paymentStatus,
+                                        description = description
+                                            .trim()
+                                            .ifBlank { null }
                                     )
                                 )
                             }
@@ -555,27 +572,28 @@ fun AddSavingsGoalSheet(
 
                     } else {
 
-                        /*
-                         * La categoría ya existe,
-                         * por lo que usamos directamente
-                         * su ID.
-                         */
+                        // -------------------------
+                        // CATEGORÍA EXISTENTE
+                        // -------------------------
+
                         onSave(
-                            SavingsGoal(
+                            PendingPayment(
                                 name = name.trim(),
-                                categoryId =
-                                    selectedCategoryId!!,
-                                targetAmount = target!!,
-                                initialAmount = current!!,
-                                deadline = selectedDate
+                                categoryId = selectedCategoryId!!,
+                                amount = totalAmount,
+                                paidAmount = initialPaidAmount,
+                                dueDate = selectedDate!!,
+                                status = paymentStatus,
+                                description = description
+                                    .trim()
+                                    .ifBlank { null }
                             )
                         )
                     }
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-
-                Text("Guardar meta")
+                Text("Guardar pago")
             }
         }
     }

@@ -57,7 +57,7 @@ interface CategoryDao {
 
     @Query("""
         SELECT COUNT(*)
-        FROM savings_goals
+        FROM pending_payments
         WHERE categoryId = :categoryId
     """)
     suspend fun countSavingsGoalsByCategory(

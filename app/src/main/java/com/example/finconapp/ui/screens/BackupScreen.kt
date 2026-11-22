@@ -358,7 +358,7 @@ fun BackupScreen(
                     )
 
                     Text(
-                        "Metas de ahorro: ${backup.savingsGoals.size}"
+                        "Metas de ahorro: ${backup.pendingPayments.size}"
                     )
 
                     Text("¿Deseas continuar?")

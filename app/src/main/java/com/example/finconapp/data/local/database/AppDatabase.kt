@@ -3,19 +3,20 @@ package com.example.finconapp.data.local.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.finconapp.data.local.dao.CategoryDao
-import com.example.finconapp.data.local.dao.SavingsGoalDao
+import com.example.finconapp.data.local.dao.PendingPaymentDao
 import com.example.finconapp.data.local.dao.TransactionDao
 import com.example.finconapp.data.local.entity.Category
 import com.example.finconapp.data.local.entity.Transaction
-import com.example.finconapp.data.local.entity.SavingsGoal
+import com.example.finconapp.data.local.entity.PendingPayment
 
 @Database(
     entities = [
         Transaction::class,
         Category::class,
-        SavingsGoal::class
+        PendingPayment::class
     ],
-    version = 5
+    version = 6,
+    exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
 
@@ -23,5 +24,5 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun categoryDao(): CategoryDao
 
-    abstract fun savingsGoalDao(): SavingsGoalDao
+    abstract fun pendingPaymentDao(): PendingPaymentDao
 }

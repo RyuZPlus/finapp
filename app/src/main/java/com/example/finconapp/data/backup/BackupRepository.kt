@@ -4,7 +4,7 @@ package com.example.finconapp.data.backup
 import androidx.room.withTransaction
 import com.example.finconapp.data.local.database.AppDatabase
 import com.example.finconapp.data.local.entity.Category
-import com.example.finconapp.data.local.entity.SavingsGoal
+import com.example.finconapp.data.local.entity.PendingPayment
 import com.example.finconapp.data.local.entity.Transaction
 
 class BackupRepository(
@@ -12,7 +12,7 @@ class BackupRepository(
 ) {
 
     companion object {
-        const val CURRENT_BACKUP_VERSION = 1
+        const val CURRENT_BACKUP_VERSION = 2
     }
 
     // Crear objeto de respaldo
@@ -28,14 +28,15 @@ class BackupRepository(
                 database.transactionDao()
                     .getAllTransactionsForBackup()
 
-            val savingsGoals =
-                database.savingsGoalDao()
-                    .getAllSavingsGoalsForBackup()
+            val pendingPayments =
+                database.pendingPaymentDao()
+                    .getAllPendingPaymentsForBackup()
 
             BackupData(
                 backupVersion = CURRENT_BACKUP_VERSION,
                 exportedAt = System.currentTimeMillis(),
 
+                // Respaldar categorías
                 categories = categories.map {
                     BackupCategory(
                         id = it.id,
@@ -43,6 +44,7 @@ class BackupRepository(
                     )
                 },
 
+                // Respaldar transacciones
                 transactions = transactions.map {
                     BackupTransaction(
                         id = it.id,
@@ -56,14 +58,18 @@ class BackupRepository(
                     )
                 },
 
-                savingsGoals = savingsGoals.map {
-                    BackupSavingsGoal(
+                // Respaldar pagos pendientes
+                pendingPayments = pendingPayments.map {
+                    BackupPendingPayment(
                         id = it.id,
                         name = it.name,
                         categoryId = it.categoryId,
-                        targetAmount = it.targetAmount,
-                        initialAmount = it.initialAmount,
-                        deadline = it.deadline
+                        amount = it.amount,
+                        paidAmount = it.paidAmount,
+                        dueDate = it.dueDate,
+                        reminderDate = it.reminderDate,
+                        status = it.status,
+                        description = it.description
                     )
                 }
             )
@@ -77,8 +83,9 @@ class BackupRepository(
 
         database.withTransaction {
 
+            // Eliminar registros anteriores
             database.transactionDao().deleteAll()
-            database.savingsGoalDao().deleteAll()
+            database.pendingPaymentDao().deleteAll()
             database.categoryDao().deleteAll()
 
             // Restaurar categorías
@@ -91,16 +98,19 @@ class BackupRepository(
                 }
             )
 
-            // Restaurar metas
-            database.savingsGoalDao().insertAll(
-                backup.savingsGoals.map {
-                    SavingsGoal(
+            // Restaurar pagos pendientes
+            database.pendingPaymentDao().insertAll(
+                backup.pendingPayments.map {
+                    PendingPayment(
                         id = it.id,
                         name = it.name,
                         categoryId = it.categoryId,
-                        targetAmount = it.targetAmount,
-                        initialAmount = it.initialAmount,
-                        deadline = it.deadline
+                        amount = it.amount,
+                        paidAmount = it.paidAmount,
+                        dueDate = it.dueDate,
+                        reminderDate = it.reminderDate,
+                        status = it.status,
+                        description = it.description
                     )
                 }
             )
@@ -132,6 +142,7 @@ class BackupRepository(
             "Versión de respaldo no compatible."
         }
 
+        // Validar categorías
         val categoryIds =
             backup.categories.map { it.id }
 
@@ -139,6 +150,7 @@ class BackupRepository(
             "El respaldo contiene categorías duplicadas."
         }
 
+        // Validar transacciones
         val transactionIds =
             backup.transactions.map { it.id }
 
@@ -146,15 +158,19 @@ class BackupRepository(
             "El respaldo contiene transacciones duplicadas."
         }
 
-        val savingsGoalIds =
-            backup.savingsGoals.map { it.id }
+        // Validar pagos pendientes
+        val pendingPaymentIds =
+            backup.pendingPayments.map { it.id }
 
-        require(savingsGoalIds.size == savingsGoalIds.toSet().size) {
-            "El respaldo contiene metas duplicadas."
+        require(
+            pendingPaymentIds.size == pendingPaymentIds.toSet().size
+        ) {
+            "El respaldo contiene pagos pendientes duplicados."
         }
 
         val validCategoryIds = categoryIds.toSet()
 
+        // Comprobar categorías de las transacciones
         require(
             backup.transactions.all {
                 it.categoryId in validCategoryIds
@@ -163,12 +179,24 @@ class BackupRepository(
             "Hay transacciones con categorías inexistentes."
         }
 
+        // Comprobar categorías de los pagos pendientes
         require(
-            backup.savingsGoals.all {
+            backup.pendingPayments.all {
                 it.categoryId in validCategoryIds
             }
         ) {
-            "Hay metas de ahorro con categorías inexistentes."
+            "Hay pagos pendientes con categorías inexistentes."
+        }
+
+        // Validar importes de pagos pendientes
+        require(
+            backup.pendingPayments.all {
+                it.amount > 0.0 &&
+                        it.paidAmount >= 0.0 &&
+                        it.paidAmount <= it.amount
+            }
+        ) {
+            "El respaldo contiene importes de pagos pendientes inválidos."
         }
     }
 }

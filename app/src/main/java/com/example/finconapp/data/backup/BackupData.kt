@@ -9,7 +9,7 @@ data class BackupData(
     val exportedAt: Long,
     val transactions: List<BackupTransaction>,
     val categories: List<BackupCategory>,
-    val savingsGoals: List<BackupSavingsGoal>
+    val pendingPayments: List<BackupPendingPayment>
 )
 
 @Serializable
@@ -31,11 +31,14 @@ data class BackupTransaction(
 )
 
 @Serializable
-data class BackupSavingsGoal(
+data class BackupPendingPayment(
     val id: Int,
     val name: String,
     val categoryId: Int,
-    val targetAmount: Double,
-    val initialAmount: Double,
-    val deadline: Long?
+    val amount: Double,
+    val paidAmount: Double,
+    val dueDate: Long,
+    val reminderDate: Long?,
+    val status: String,
+    val description: String?
 )

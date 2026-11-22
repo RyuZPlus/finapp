@@ -390,7 +390,7 @@ fun AddTransactionSheet(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     )
 
                     ExposedDropdownMenu(
