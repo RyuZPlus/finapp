@@ -12,7 +12,7 @@ class PendingPaymentRepository(
     suspend fun registerPayment(
         payment: PendingPayment,
         amount: Double
-    ) {
+    ): PendingPayment {
         require(amount > 0.0 && amount.isFinite()) {
             "El importe debe ser mayor que cero."
         }
@@ -35,6 +35,8 @@ class PendingPaymentRepository(
         )
 
         dao.update(updatedPayment)
+
+        return updatedPayment
     }
 
 
@@ -64,8 +66,8 @@ class PendingPaymentRepository(
     }
 
     // Registrar un nuevo pago
-    suspend fun insert(payment: PendingPayment) {
-        dao.insert(payment)
+    suspend fun insert(payment: PendingPayment): Long {
+        return dao.insert(payment)
     }
 
     // Actualizar un pago

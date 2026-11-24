@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 interface PendingPaymentDao {
 
     @Insert
-    suspend fun insert(payment: PendingPayment)
+    suspend fun insert(payment: PendingPayment): Long
 
     @Insert
     suspend fun insertAll(payments: List<PendingPayment>)
@@ -49,4 +49,13 @@ interface PendingPaymentDao {
     suspend fun categoryHasPendingPayments(
         categoryId: Int
     ): Boolean
+
+    @Query("""
+        SELECT * FROM pending_payments
+        WHERE id = :paymentId
+        LIMIT 1
+    """)
+    suspend fun getPendingPaymentById(
+        paymentId: Int
+    ): PendingPayment?
 }

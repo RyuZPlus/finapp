@@ -23,6 +23,20 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.platform.LocalContext
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 
 @Composable
 fun PendingPaymentScreen(
@@ -37,6 +51,17 @@ fun PendingPaymentScreen(
     var paymentToManage by remember { mutableStateOf<PendingPayment?>(null) }
     var paymentToEdit by remember { mutableStateOf<PendingPayment?>(null) }
     var paymentToDelete by remember { mutableStateOf<PendingPayment?>(null) }
+
+    val context = LocalContext.current
+
+    val notificationPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) {
+            // Aunque el permiso sea rechazado,
+            // permitimos registrar el pago.
+            showAddDialog = true
+        }
 
     // Solo se consideran compromisos que todavía tienen saldo.
     val activePayments = payments.filter {
@@ -74,7 +99,23 @@ fun PendingPaymentScreen(
                 style = MaterialTheme.typography.headlineMedium
             )
 
-            Button(onClick = { showAddDialog = true }) {
+            Button(
+                onClick = {
+                    if (
+                        Build.VERSION.SDK_INT >= 33 &&
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) != PackageManager.PERMISSION_GRANTED
+                    ) {
+                        notificationPermissionLauncher.launch(
+                            Manifest.permission.POST_NOTIFICATIONS
+                        )
+                    } else {
+                        showAddDialog = true
+                    }
+                }
+            ) {
                 Text("Agregar")
             }
         }
@@ -459,6 +500,7 @@ private fun RegisterPaymentDialog(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 private fun PendingPaymentFormDialog(
     payment: PendingPayment?,
@@ -467,6 +509,8 @@ private fun PendingPaymentFormDialog(
     onCreateCategory: (String, (Int?) -> Unit) -> Unit,
     onConfirm: (PendingPayment) -> Unit
 ) {
+    val context = LocalContext.current
+
     var name by remember(payment?.id) {
         mutableStateOf(payment?.name ?: "")
     }
@@ -475,31 +519,77 @@ private fun PendingPaymentFormDialog(
         mutableStateOf(payment?.amount?.toString() ?: "")
     }
 
+    var paidAmountText by remember(payment?.id) {
+        mutableStateOf(payment?.paidAmount?.toString() ?: "0")
+    }
+
+    var description by remember(payment?.id) {
+        mutableStateOf(payment?.description ?: "")
+    }
+
     var categoryId by remember(payment?.id) {
-        mutableIntStateOf(payment?.categoryId ?: categories.firstOrNull()?.id ?: 0)
+        mutableIntStateOf(
+            payment?.categoryId ?: categories.firstOrNull()?.id ?: 0
+        )
     }
 
     var dueDate by remember(payment?.id) {
         mutableStateOf(payment?.dueDate ?: startOfToday())
     }
 
+    var reminderType by remember(payment?.id) {
+        mutableStateOf(payment?.reminderType ?: "NONE")
+    }
+
+    var customReminderDate by remember(payment?.id) {
+        mutableStateOf(
+            payment?.reminderDate ?: defaultReminderTime(
+                payment?.dueDate ?: startOfToday()
+            )
+        )
+    }
+
     var expanded by remember { mutableStateOf(false) }
+    var reminderExpanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var showReminderDatePicker by remember { mutableStateOf(false) }
     var showNewCategory by remember { mutableStateOf(false) }
+
     var newCategoryName by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val selectedCategory = categories.find { it.id == categoryId }
+    val selectedCategory = categories.find {
+        it.id == categoryId
+    }
+
+    val reminderOptions = listOf(
+        "NONE" to "Sin recordatorio",
+        "DUE_DATE" to "El día del vencimiento",
+        "ONE_DAY" to "Un día antes",
+        "THREE_DAYS" to "Tres días antes",
+        "ONE_WEEK" to "Una semana antes",
+        "CUSTOM" to "Personalizado"
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(if (payment == null) "Nuevo pago" else "Editar pago")
+            Text(
+                if (payment == null) "Nuevo pago"
+                else "Editar pago"
+            )
         },
         text = {
             Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 520.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+
+                // NOMBRE
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = {
@@ -511,31 +601,45 @@ private fun PendingPaymentFormDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                // CATEGORÍA
+
                 ExposedDropdownMenuBox(
                     expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
+                    onExpandedChange = {
+                        expanded = !expanded
+                    }
                 ) {
                     OutlinedTextField(
-                        value = selectedCategory?.name
-                            ?: "Selecciona una categoría",
+                        value = selectedCategory?.name ?: "",
                         onValueChange = {},
                         readOnly = true,
                         label = { Text("Categoría") },
+                        placeholder = {
+                            Text("Selecciona una categoría")
+                        },
                         trailingIcon = {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded)
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                expanded = expanded
+                            )
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                            .menuAnchor(
+                                ExposedDropdownMenuAnchorType.PrimaryNotEditable
+                            )
                     )
 
                     ExposedDropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = {
+                            expanded = false
+                        }
                     ) {
                         categories.forEach { category ->
                             DropdownMenuItem(
-                                text = { Text(category.name) },
+                                text = {
+                                    Text(category.name)
+                                },
                                 onClick = {
                                     categoryId = category.id
                                     expanded = false
@@ -545,20 +649,31 @@ private fun PendingPaymentFormDialog(
                     }
                 }
 
+                // CREAR CATEGORÍA
+
                 TextButton(
-                    onClick = { showNewCategory = !showNewCategory }
+                    onClick = {
+                        showNewCategory = !showNewCategory
+                    }
                 ) {
                     Text(
-                        if (showNewCategory) "Cancelar nueva categoría"
-                        else "Crear categoría"
+                        if (showNewCategory) {
+                            "Cancelar nueva categoría"
+                        } else {
+                            "Crear categoría"
+                        }
                     )
                 }
 
                 if (showNewCategory) {
                     OutlinedTextField(
                         value = newCategoryName,
-                        onValueChange = { newCategoryName = it },
-                        label = { Text("Nombre de la categoría") },
+                        onValueChange = {
+                            newCategoryName = it
+                        },
+                        label = {
+                            Text("Nombre de la categoría")
+                        },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -566,6 +681,7 @@ private fun PendingPaymentFormDialog(
                     TextButton(
                         onClick = {
                             val value = newCategoryName.trim()
+
                             if (value.isNotBlank()) {
                                 onCreateCategory(value) { createdId ->
                                     if (createdId != null) {
@@ -581,13 +697,20 @@ private fun PendingPaymentFormDialog(
                     }
                 }
 
+                // IMPORTE TOTAL
+
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = {
                         amountText = it
                         errorMessage = null
                     },
-                    label = { Text("Importe total") },
+                    label = {
+                        Text("Importe total")
+                    },
+                    placeholder = {
+                        Text("0.00")
+                    },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Decimal
@@ -595,19 +718,239 @@ private fun PendingPaymentFormDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                if (payment != null) {
+                // IMPORTE ABONADO
+
+                OutlinedTextField(
+                    value = paidAmountText,
+                    onValueChange = {
+                        paidAmountText = it
+                        errorMessage = null
+                    },
+                    label = {
+                        Text("Importe abonado")
+                    },
+                    placeholder = {
+                        Text("0.00")
+                    },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // FECHA DE VENCIMIENTO
+
+                OutlinedButton(
+                    onClick = {
+                        val calendar = Calendar.getInstance(
+                            TimeZone.getTimeZone("UTC")
+                        ).apply {
+                            timeInMillis = dueDate
+                        }
+
+                        android.app.DatePickerDialog(
+                            context,
+                            { _, year, month, day ->
+                                dueDate = createUtcDate(
+                                    year,
+                                    month,
+                                    day,
+                                    0,
+                                    0
+                                )
+                            },
+                            calendar.get(Calendar.YEAR),
+                            calendar.get(Calendar.MONTH),
+                            calendar.get(Calendar.DAY_OF_MONTH)
+                        ).show()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CalendarToday,
+                        contentDescription = null
+                    )
+
+                    Spacer(Modifier.width(8.dp))
+
                     Text(
-                        text = "Importe abonado: ${formatCurrency(payment.paidAmount)}",
-                        style = MaterialTheme.typography.bodySmall
+                        "Vencimiento: ${formatPaymentDate(dueDate)}"
                     )
                 }
 
-                OutlinedButton(
-                    onClick = { showDatePicker = true },
-                    modifier = Modifier.fillMaxWidth()
+                // RECORDATORIO
+
+                HorizontalDivider()
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Vencimiento: ${formatPaymentDate(dueDate)}")
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Text(
+                        text = "Recordatorio",
+                        style = MaterialTheme.typography.titleMedium
+                    )
                 }
+
+                ExposedDropdownMenuBox(
+                    expanded = reminderExpanded,
+                    onExpandedChange = {
+                        reminderExpanded = !reminderExpanded
+                    }
+                ) {
+                    OutlinedTextField(
+                        value = reminderOptions.first {
+                            it.first == reminderType
+                        }.second,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = {
+                            Text("Cuándo recordar")
+                        },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(
+                                reminderExpanded
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(
+                                ExposedDropdownMenuAnchorType.PrimaryNotEditable
+                            )
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = reminderExpanded,
+                        onDismissRequest = {
+                            reminderExpanded = false
+                        }
+                    ) {
+                        reminderOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(option.second)
+                                },
+                                onClick = {
+                                    reminderType = option.first
+                                    reminderExpanded = false
+
+                                    if (option.first == "CUSTOM") {
+                                        customReminderDate =
+                                            defaultReminderTime(dueDate)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // FECHA Y HORA PERSONALIZADAS
+
+                if (reminderType == "CUSTOM") {
+
+                    OutlinedButton(
+                        onClick = {
+                            val calendar = Calendar.getInstance(
+                                TimeZone.getTimeZone("UTC")
+                            ).apply {
+                                timeInMillis = customReminderDate
+                            }
+
+                            android.app.DatePickerDialog(
+                                context,
+                                { _, year, month, day ->
+                                    val current = Calendar.getInstance(
+                                        TimeZone.getTimeZone("UTC")
+                                    ).apply {
+                                        timeInMillis = customReminderDate
+                                    }
+
+                                    customReminderDate = createUtcDate(
+                                        year,
+                                        month,
+                                        day,
+                                        current.get(Calendar.HOUR_OF_DAY),
+                                        current.get(Calendar.MINUTE)
+                                    )
+                                },
+                                calendar.get(Calendar.YEAR),
+                                calendar.get(Calendar.MONTH),
+                                calendar.get(Calendar.DAY_OF_MONTH)
+                            ).show()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.CalendarToday,
+                            contentDescription = null
+                        )
+
+                        Spacer(Modifier.width(8.dp))
+
+                        Text(
+                            "Fecha: ${formatReminderDateTime(customReminderDate)}"
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            val calendar = Calendar.getInstance(
+                                TimeZone.getTimeZone("UTC")
+                            ).apply {
+                                timeInMillis = customReminderDate
+                            }
+
+                            android.app.TimePickerDialog(
+                                context,
+                                { _, hour, minute ->
+                                    customReminderDate = createUtcDate(
+                                        calendar.get(Calendar.YEAR),
+                                        calendar.get(Calendar.MONTH),
+                                        calendar.get(Calendar.DAY_OF_MONTH),
+                                        hour,
+                                        minute
+                                    )
+                                },
+                                calendar.get(Calendar.HOUR_OF_DAY),
+                                calendar.get(Calendar.MINUTE),
+                                true
+                            ).show()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Hora: ${formatReminderTime(customReminderDate)}"
+                        )
+                    }
+                }
+
+                // DESCRIPCIÓN
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = {
+                        description = it
+                    },
+                    label = {
+                        Text("Descripción (opcional)")
+                    },
+                    placeholder = {
+                        Text("Detalles adicionales del pago")
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 4
+                )
+
+                // ERRORES
 
                 errorMessage?.let {
                     Text(
@@ -622,9 +965,25 @@ private fun PendingPaymentFormDialog(
             TextButton(
                 onClick = {
                     val cleanName = name.trim()
+
                     val amount = amountText.trim()
                         .replace(",", ".")
                         .toDoubleOrNull()
+
+                    val paid = paidAmountText.trim()
+                        .ifBlank { "0" }
+                        .replace(",", ".")
+                        .toDoubleOrNull()
+
+                    val reminderDate = when (reminderType) {
+                        "NONE" -> null
+                        "DUE_DATE" -> reminderAtDaysBefore(dueDate, 0)
+                        "ONE_DAY" -> reminderAtDaysBefore(dueDate, 1)
+                        "THREE_DAYS" -> reminderAtDaysBefore(dueDate, 3)
+                        "ONE_WEEK" -> reminderAtDaysBefore(dueDate, 7)
+                        "CUSTOM" -> customReminderDate
+                        else -> null
+                    }
 
                     when {
                         cleanName.isBlank() -> {
@@ -638,15 +997,37 @@ private fun PendingPaymentFormDialog(
                         amount == null ||
                                 !amount.isFinite() ||
                                 amount <= 0.0 -> {
-                            errorMessage = "El importe debe ser mayor que cero."
+                            errorMessage = "El importe total debe ser mayor que cero."
                         }
 
-                        payment != null && amount < payment.paidAmount -> {
-                            errorMessage = "El importe no puede ser menor que lo ya abonado."
+                        paid == null ||
+                                !paid.isFinite() ||
+                                paid < 0.0 -> {
+                            errorMessage = "Introduce un importe abonado válido."
+                        }
+
+                        paid > amount -> {
+                            errorMessage = "El abono no puede superar el importe total."
+                        }
+
+                        reminderType == "CUSTOM" &&
+                                isReminderAfterDueDate(customReminderDate, dueDate) -> {
+                            errorMessage = "El recordatorio no puede ser posterior al vencimiento."
+                        }
+
+                        reminderType == "CUSTOM" &&
+                                customReminderDate <= System.currentTimeMillis() -> {
+                            errorMessage = "Selecciona una fecha y hora futura."
                         }
 
                         else -> {
-                            val paid = payment?.paidAmount ?: 0.0
+                            val currentPaid = paid
+
+                            val status = when {
+                                payment?.status == "CANCELLED" -> "CANCELLED"
+                                currentPaid >= amount -> "PAID"
+                                else -> "PENDING"
+                            }
 
                             onConfirm(
                                 PendingPayment(
@@ -654,18 +1035,24 @@ private fun PendingPaymentFormDialog(
                                     name = cleanName,
                                     categoryId = categoryId,
                                     amount = amount,
-                                    paidAmount = paid,
+                                    paidAmount = currentPaid,
                                     dueDate = dueDate,
-                                    reminderDate = payment?.reminderDate,
-                                    status = if (paid >= amount) "PAID" else "PENDING",
-                                    description = payment?.description
+                                    reminderType = reminderType,
+                                    reminderDate = reminderDate,
+                                    status = status,
+                                    description = description
+                                        .trim()
+                                        .ifBlank { null }
                                 )
                             )
                         }
                     }
                 }
             ) {
-                Text(if (payment == null) "Guardar pago" else "Guardar cambios")
+                Text(
+                    if (payment == null) "Guardar pago"
+                    else "Guardar cambios"
+                )
             }
         },
         dismissButton = {
@@ -674,35 +1061,6 @@ private fun PendingPaymentFormDialog(
             }
         }
     )
-
-    if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = dueDate
-        )
-
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let {
-                            dueDate = it
-                        }
-                        showDatePicker = false
-                    }
-                ) {
-                    Text("Aceptar")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("Cancelar")
-                }
-            }
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
 }
 
 private fun startOfToday(): Long {
@@ -724,3 +1082,130 @@ private fun formatPaymentDate(timestamp: Long): String {
         timeZone = TimeZone.getTimeZone("UTC")
     }.format(Date(timestamp))
 }
+
+private fun createUtcDate(
+    year: Int,
+    month: Int,
+    day: Int,
+    hour: Int,
+    minute: Int
+): Long {
+    return Calendar.getInstance(
+        TimeZone.getTimeZone("UTC")
+    ).apply {
+        set(Calendar.YEAR, year)
+        set(Calendar.MONTH, month)
+        set(Calendar.DAY_OF_MONTH, day)
+        set(Calendar.HOUR_OF_DAY, hour)
+        set(Calendar.MINUTE, minute)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+}
+
+private fun startOfUtcDay(timestamp: Long): Long {
+    return Calendar.getInstance(
+        TimeZone.getTimeZone("UTC")
+    ).apply {
+        timeInMillis = timestamp
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+}
+
+private fun createLocalDate(
+    year: Int,
+    month: Int,
+    day: Int,
+    hour: Int,
+    minute: Int
+): Long {
+    return Calendar.getInstance().apply {
+        clear()
+        set(Calendar.YEAR, year)
+        set(Calendar.MONTH, month)
+        set(Calendar.DAY_OF_MONTH, day)
+        set(Calendar.HOUR_OF_DAY, hour)
+        set(Calendar.MINUTE, minute)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+}
+
+private fun defaultReminderTime(dueDate: Long): Long {
+    val utcCalendar = Calendar.getInstance(
+        TimeZone.getTimeZone("UTC")
+    ).apply {
+        timeInMillis = dueDate
+    }
+
+    return createLocalDate(
+        utcCalendar.get(Calendar.YEAR),
+        utcCalendar.get(Calendar.MONTH),
+        utcCalendar.get(Calendar.DAY_OF_MONTH),
+        9,
+        0
+    )
+}
+
+private fun isReminderAfterDueDate(
+    reminderDate: Long,
+    dueDate: Long
+): Boolean {
+    val reminder = Calendar.getInstance().apply {
+        timeInMillis = reminderDate
+    }
+
+    val due = Calendar.getInstance(
+        TimeZone.getTimeZone("UTC")
+    ).apply {
+        timeInMillis = dueDate
+    }
+
+    val reminderKey =
+        reminder.get(Calendar.YEAR) * 10000 +
+                (reminder.get(Calendar.MONTH) + 1) * 100 +
+                reminder.get(Calendar.DAY_OF_MONTH)
+
+    val dueKey =
+        due.get(Calendar.YEAR) * 10000 +
+                (due.get(Calendar.MONTH) + 1) * 100 +
+                due.get(Calendar.DAY_OF_MONTH)
+
+    return reminderKey > dueKey
+}
+
+private fun reminderAtDaysBefore(
+    dueDate: Long,
+    daysBefore: Int
+): Long {
+    val calendar = Calendar.getInstance(
+        TimeZone.getTimeZone("UTC")
+    ).apply {
+        timeInMillis = defaultReminderTime(dueDate)
+        add(Calendar.DAY_OF_MONTH, -daysBefore)
+    }
+
+    return calendar.timeInMillis
+}
+
+private fun formatReminderDateTime(timestamp: Long): String {
+    return SimpleDateFormat(
+        "dd/MM/yyyy",
+        Locale("es", "MX")
+    ).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }.format(Date(timestamp))
+}
+
+private fun formatReminderTime(timestamp: Long): String {
+    return SimpleDateFormat(
+        "HH:mm",
+        Locale("es", "MX")
+    ).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }.format(Date(timestamp))
+}
+

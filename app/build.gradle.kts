@@ -6,15 +6,16 @@ plugins {
     alias(libs.plugins.room)
 }
 
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
 android {
     namespace = "com.example.finconapp"
     compileSdk {
         version = release(37) {
             minorApiLevel = 1
         }
-    }
-    room {
-        schemaDirectory("$projectDir/schemas")
     }
 
     defaultConfig {

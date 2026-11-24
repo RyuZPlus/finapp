@@ -41,6 +41,10 @@ data class PendingPayment(
     // Fecha límite de pago
     val dueDate: Long,
 
+    // NONE, DUE_DATE, ONE_DAY, THREE_DAYS,
+    // ONE_WEEK, CUSTOM
+    val reminderType: String = "NONE",
+
     // Fecha y hora en que se notificará al usuario
     val reminderDate: Long? = null,
 
