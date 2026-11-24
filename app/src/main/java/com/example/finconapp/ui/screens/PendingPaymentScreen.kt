@@ -858,18 +858,14 @@ private fun PendingPaymentFormDialog(
 
                     OutlinedButton(
                         onClick = {
-                            val calendar = Calendar.getInstance(
-                                TimeZone.getTimeZone("UTC")
-                            ).apply {
+                            val calendar = Calendar.getInstance().apply {
                                 timeInMillis = customReminderDate
                             }
 
                             android.app.DatePickerDialog(
                                 context,
                                 { _, year, month, day ->
-                                    val current = Calendar.getInstance(
-                                        TimeZone.getTimeZone("UTC")
-                                    ).apply {
+                                    val current = Calendar.getInstance().apply {
                                         timeInMillis = customReminderDate
                                     }
 
@@ -902,16 +898,14 @@ private fun PendingPaymentFormDialog(
 
                     OutlinedButton(
                         onClick = {
-                            val calendar = Calendar.getInstance(
-                                TimeZone.getTimeZone("UTC")
-                            ).apply {
+                            val calendar = Calendar.getInstance().apply {
                                 timeInMillis = customReminderDate
                             }
 
                             android.app.TimePickerDialog(
                                 context,
                                 { _, hour, minute ->
-                                    customReminderDate = createUtcDate(
+                                    customReminderDate = createLocalDate(
                                         calendar.get(Calendar.YEAR),
                                         calendar.get(Calendar.MONTH),
                                         calendar.get(Calendar.DAY_OF_MONTH),
@@ -1181,9 +1175,7 @@ private fun reminderAtDaysBefore(
     dueDate: Long,
     daysBefore: Int
 ): Long {
-    val calendar = Calendar.getInstance(
-        TimeZone.getTimeZone("UTC")
-    ).apply {
+    val calendar = Calendar.getInstance().apply {
         timeInMillis = defaultReminderTime(dueDate)
         add(Calendar.DAY_OF_MONTH, -daysBefore)
     }
@@ -1195,17 +1187,13 @@ private fun formatReminderDateTime(timestamp: Long): String {
     return SimpleDateFormat(
         "dd/MM/yyyy",
         Locale("es", "MX")
-    ).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }.format(Date(timestamp))
+    ).format(Date(timestamp))
 }
 
 private fun formatReminderTime(timestamp: Long): String {
     return SimpleDateFormat(
         "HH:mm",
         Locale("es", "MX")
-    ).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }.format(Date(timestamp))
+    ).format(Date(timestamp))
 }
 

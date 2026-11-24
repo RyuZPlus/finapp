@@ -18,7 +18,7 @@ object ReminderDateCalculator {
             else -> return null
         }
 
-        // Obtener la fecha de vencimiento en UTC.
+        // La fecha de vencimiento se interpreta como fecha UTC.
         val utcCalendar = Calendar.getInstance(
             TimeZone.getTimeZone("UTC")
         ).apply {
@@ -29,8 +29,9 @@ object ReminderDateCalculator {
         val month = utcCalendar.get(Calendar.MONTH)
         val day = utcCalendar.get(Calendar.DAY_OF_MONTH)
 
-        // Construir la fecha en la zona horaria local.
+        // El recordatorio se construye en horario local.
         return Calendar.getInstance().apply {
+            clear()
             set(Calendar.YEAR, year)
             set(Calendar.MONTH, month)
             set(Calendar.DAY_OF_MONTH, day)
